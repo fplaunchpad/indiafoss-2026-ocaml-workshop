@@ -36,6 +36,11 @@ if [ "$COPY_ASSETS" = "1" ]; then
   cp -R "$REPO_ROOT/assets" "$REPO_ROOT/_site/assets"
 fi
 
+if [ "$COPY_ASSETS" = "1" ] && [ -d "$REPO_ROOT/games" ]; then
+  rm -rf "$REPO_ROOT/_site/games"
+  cp -R "$REPO_ROOT/games" "$REPO_ROOT/_site/games"
+fi
+
 cat > "$REPO_ROOT/_site/index.html" <<HTML
 <!doctype html>
 <html lang="en">

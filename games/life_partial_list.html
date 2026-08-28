@@ -1,0 +1,1293 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Game of Life practice (list version)</title>
+  <style>
+    /* Palette and type system lifted from the ocaml_nptel chapter shell
+     (assets/css/chapter.css) -- same variables, same serif-body /
+     sans-heading split, same code and quiz/solution box treatment --
+     so this standalone practice page reads like a lecture chapter
+     rather than a generic worksheet. */
+    :root {
+      --fg: #1c1c1c;
+      --muted: #5a5a5a;
+      --accent: #2e5f6a;
+      --bg: #ffffff;
+      --rule: #e3e3e3;
+      --code-bg: #f7f7f5;
+      --width: 720px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    body {
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      line-height: 1.25;
+      margin-top: 2.2rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      color: var(--accent);
+    }
+
+    p {
+      margin: 0.9rem 0;
+    }
+
+    pre,
+    code {
+      font-family: "JetBrains Mono", "Fira Code", Menlo, ui-monospace, monospace;
+    }
+
+    code {
+      background: var(--code-bg);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    kbd {
+      font-family: "JetBrains Mono", "Fira Code", Menlo, ui-monospace, monospace;
+      font-size: 0.85em;
+      background: var(--code-bg);
+      border: 1px solid var(--rule);
+      border-radius: 3px;
+      padding: 0.05rem 0.4rem;
+    }
+
+    .layout {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      gap: 2.4rem;
+      align-items: flex-start;
+    }
+
+    .content {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: var(--width);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 1.5rem;
+      flex: 0 0 320px;
+      background: #fcfcfb;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+    }
+
+    @media (max-width: 880px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        position: static;
+        width: 100%;
+        flex-basis: auto;
+        order: -1;
+        margin-bottom: 1.5rem;
+        box-sizing: border-box;
+      }
+    }
+
+    .quiz-code {
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.9rem 1rem;
+      margin: 1.4rem 0;
+      background: #fafaf7;
+    }
+
+    /* Whole-cell "correct" tint, ported from chapter.css's
+     `.quiz.answered.quiz-correct` -- setupCodeQuiz below toggles these
+     classes on a pass/fail, and since .quiz-code IS the box wrapping the
+     student's cell, this recolors the entire cell, not just the status
+     line. */
+    .quiz-code.answered.quiz-correct {
+      border-left-color: #3a7a3a;
+      background: #f3faf3;
+    }
+
+    .quiz-code.answered:not(.quiz-correct) {
+      border-left-color: #b35858;
+    }
+
+    .quiz-code x-ocaml {
+      display: block;
+      margin-top: 0.6rem;
+    }
+
+    /* "Check" button + pass/fail status for a quiz-code cell's hidden
+     data-quiz-test sibling -- CSS/JS ported from ocaml_nptel's
+     tools/nptel-build (chapter.css's ".quiz-code .quiz-controls" rules /
+     emit.ml's setupCodeQuiz), which already solves this against stock
+     x-ocaml with no src/worker/protocol changes. */
+    .quiz-code .quiz-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 0.4rem 0 0.2rem;
+    }
+
+    .quiz-check {
+      padding: 0.3rem 0.9rem;
+      border: 1px solid #6d6d6d;
+      background: #f5f5f5;
+      color: var(--accent);
+      font: 600 13px Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .quiz-check:hover {
+      background: #ececec;
+    }
+
+    .quiz-show-tests {
+      padding: 0.2rem 0.5rem;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: 13px ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+
+    .quiz-show-tests:hover {
+      color: var(--accent);
+    }
+
+    .quiz-status {
+      font: 0.92em ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .quiz-status.running {
+      color: var(--muted);
+    }
+
+    .quiz-status.pass {
+      color: #3a7a3a;
+      font-weight: 600;
+    }
+
+    .quiz-status.fail {
+      color: #b35858;
+      font-weight: 600;
+    }
+
+    /* Overrides the "hidden" HTML attribute, which x-ocaml's own
+     `:host { display: block }` (an author-level rule) otherwise beats in
+     the cascade -- confirmed nothing in this repo relies on bare
+     `hidden` working on an <x-ocaml> element today. */
+    .quiz-code x-ocaml[data-quiz-test] {
+      display: none !important;
+    }
+
+    .quiz-code.show-tests x-ocaml[data-quiz-test] {
+      display: block !important;
+    }
+
+    details.solution {
+      margin: 0.8rem 0 2rem;
+      padding: 0.4rem 0.8rem;
+      background: #fafafa;
+      border-left: 3px solid var(--accent);
+      border-radius: 2px;
+    }
+
+    details.solution summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 0.3rem 0;
+      user-select: none;
+    }
+
+    details.solution summary::marker {
+      color: var(--muted);
+    }
+
+    details.solution[open] summary {
+      margin-bottom: 0.4rem;
+    }
+
+    details.solution x-ocaml {
+      display: block;
+      margin: 0.8rem 0;
+    }
+
+    details.solution>*:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Same collapsed-by-default treatment as .solution, for cells that are
+     prefilled/given to you rather than problems to solve -- distinguished
+     by a muted (not accent-colored) border/label so it doesn't read as
+     "the answer". Unlike a .solution cell, a .provided cell keeps its
+     ordinary `run-on="click"` -- collapsing it is purely visual, it is
+     still a real dependency you must Run like any other cell. */
+    details.provided {
+      margin: 0.8rem 0 1.4rem;
+      padding: 0.4rem 0.8rem;
+      background: #f7f7f5;
+      border-left: 3px solid var(--muted);
+      border-radius: 2px;
+    }
+
+    details.provided summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 0.3rem 0;
+      user-select: none;
+    }
+
+    details.provided summary::marker {
+      color: var(--muted);
+    }
+
+    details.provided[open] summary {
+      margin-bottom: 0.4rem;
+    }
+
+    details.provided x-ocaml {
+      display: block;
+      margin: 0.8rem 0;
+    }
+
+    details.provided>*:last-child {
+      margin-bottom: 0;
+    }
+
+    table.life {
+      border-collapse: collapse;
+      background: #222;
+      margin: 0.6rem 0;
+    }
+
+    table.life td {
+      width: 11px;
+      height: 11px;
+      border: 1px solid #333;
+      cursor: crosshair;
+    }
+
+    table.life td.life-off {
+      background: #1a1a1a;
+    }
+
+    table.life td.life-on {
+      background: #7ee787;
+    }
+
+    .controls {
+      margin: 0.6rem 0;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .controls button {
+      border: 1px solid var(--rule);
+      background: transparent;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--accent);
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+    }
+
+    .controls button:hover {
+      background: var(--code-bg);
+    }
+
+    .controls button.on {
+      background: #e8f0e6;
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    #game-panel p {
+      font-size: 0.9em;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <script async src="x-ocaml.js" src-worker="x-ocaml.worker.js"></script>
+
+  <!-- ============================================================
+     Layout: .content (the exercise, left/top) and .sidebar (a sticky
+     board, right/bottom) live side by side inside .layout. The sidebar
+     holds exactly ONE div, #game-panel, always visible from the moment
+     the page loads.
+
+     THE BOARD IS OWNED BY THE SECOND CELL ON THE PAGE (right below,
+     before Background even appears), not by a cell at the end. The
+     first cell just defines `rows`/`cols`/the `grid` type/`make_grid`/
+     `get`/`set`/`wrap`/`neighbor_offsets`, split out on its own because
+     `wrap` and `neighbor_offsets` matter to the problems below, not
+     just as plumbing to skim past. The second cell carries
+     `game-panel="#game-panel"`, defines the rest of the board plumbing
+     (drawing, session state, UI chrome), AND registers the mouse/key/
+     tick handlers via Game_lib.on_mouse/on_key/on_tick, ending with
+     `let () = refresh ()` to paint the board immediately. Both sit
+     ahead of every problem and every collapsed solution, so clicking
+     Run on anything, anywhere, backward-cascades through both of them
+     first (cell.ml's `run`), and the board appears the moment you run
+     the very first thing you touch, not after you've worked all the
+     way down to a final wiring cell.
+
+     THREE STUDENT/PROVIDED FUNCTIONS THIS CELL CALLS DON'T EXIST YET AT
+     THAT POINT -- population, advance, and random_grid are all written
+     (or, for advance, composed) further down the page, after this cell
+     has already run. Referencing an unbound name would be a compile
+     error no `try ... with` could catch, so each is called through a
+     mutable ref cell instead (`population_ref`, `advance_ref`,
+     `random_grid_ref`), seeded with a harmless stub. The problem cell
+     that defines the real function ends with one extra line --
+     `let () = population_ref := population`, etc. -- that reassigns the
+     ref, so every later dereference (`!population_ref`) sees the real
+     thing, never a stale snapshot. advance itself is defined in its own
+     small cell right after next_generation (the function it composes),
+     for the same reason: by that point in the page next_generation
+     already exists to call, but this cell's own top-of-page position
+     doesn't have it yet.
+
+     THE BOARD REPAINTS ITSELF the moment a problem cell finishes
+     running -- not only on the next click/key/tick -- via
+     `Game_lib.on_repaint refresh` below plus src/game_host.ml's
+     `repaint_all`. A problem cell CANNOT just call `refresh ()` itself
+     to get this: worker/eval.ml tags every `Html` render with whichever
+     cell's id it was compiled under (`X_ocaml_lib.id`), and src/cell.ml
+     only routes `Html` output into #game-panel for the ONE cell that
+     carries `game-panel="..."` -- a render from any other cell paints
+     into that cell's own (invisible, off-panel) output instead and
+     #game-panel never updates. `Cell.completed_run` fixes this
+     generically: whenever a cell with no panel of its own finishes,
+     it dispatches a synthetic `Game_lib.dispatch_repaint ()` INTO the
+     panel cell's own toplevel (the same channel mouse/key/tick already
+     use), which is the only channel wired to reach #game-panel.
+
+     THIS RELIES ON TWO PLATFORM FIXES, not just this page's structure:
+
+     1. Every mouse/key/tick/repaint dispatch re-enters THIS cell's own
+        toplevel session (game_host.ml dispatches under the owning
+        cell's id). worker/x_worker.ml's `Dispatch` handler used to run
+        with `sandbox:false`, which calls `Environment.reset` on that
+        same id first -- correct for a genuine cell re-run, but wrong
+        for a repeat handler invocation: it rewound the interpreter back
+        to THIS cell's own checkpoint, discarding every binding any
+        LATER cell (population, count_live_neighbors, advance, ...) had
+        added, every single dispatch. Fixed by running dispatch with
+        `sandbox:true` instead, which never resets or re-checkpoints --
+        it just runs against whatever the interpreter's current state
+        already is, exactly what a repeat handler call needs.
+
+     2. Separately, `Environment.reset` itself had an off-by-one: it
+        popped a checkpoint tagged with EXACTLY the requested id, not
+        just strictly-later ones, silently erasing a cell's own most
+        recent capture the moment anything re-entered that same id.
+        Harmless when the board-owning cell was the LAST thing on the
+        page (nothing after it ever needed those names back); would have
+        been fatal here regardless of fix (1), since every problem cell
+        below needs `session`, etc. from this cell, and `grid` from the
+        small cell just before it, to compile.
+        Fixed by changing the pop condition from `>=` to `>`.
+
+     Every cell on this page is `run-on="click"` -- nothing runs on its
+     own, including this one; the board is visible on first run, not on
+     page load. -->
+
+  <!-- Every problem's reference solution is `run-on="peek"` and defines
+     its function under the SAME name as the problem cell above it
+     (`population`, not `population_solution`) -- peek mode never
+     resets or captures the interpreter's checkpoint stack (see
+     worker/x_worker.ml's Dispatch/Peek_eval), so this redefinition is
+     purely local to that one evaluation and is gone again the moment
+     any real cell next runs and resets back to its own checkpoint.
+     Nothing in a solution cell ever reassigns a `*_ref`, so opening or
+     running one has zero effect on the board, on purpose; `peek` mode
+     also means it never runs as a side effect of any other cell's
+     cascade (`skip_peek`). -->
+
+  <div class="layout">
+    <div class="content">
+
+      <h1>Practice: Conway's Game of Life <small style="color: var(--muted); font-weight: 400;">(list version)</small>
+      </h1>
+
+      <p>Conway's <strong>Game of Life</strong> is a grid of cells, each alive or
+        dead, and every cell updates at once under two rules. A live cell
+        survives with 2 or 3 live neighbors; any other count kills it. A dead
+        cell with exactly 3 live neighbors comes alive. Conway invented these
+        two rules in 1970, and they're enough to produce complex shapes like gliders that
+        crawl steadily across the board without ever stopping.</p>
+
+      <p>Below you can read some of the important functions and definitions that you
+        will have to use as you code up the solutions to the given functions.
+      </p>
+      <x-ocaml run-on="click">
+        let rows = 24 (* number of rows on the board *)
+        let cols = 24 (* number of columns on the board *)
+
+        type grid = bool list list (* alive/dead for every cell, one list of rows, each row a list of cells *)
+
+        let make_grid () = List.init rows (fun _ -> List.init cols (fun _ -> false)) (* a fresh, all-dead board *)
+
+        (* reads the cell at (r, c). Lists have no `.(r).(c)` syntax, so every
+        read in this exercise goes through this instead. *)
+        let get g r c = List.nth (List.nth g r) c
+
+        (* returns a NEW board with (r, c) set to v, everything else unchanged.
+        replace_nth is a local helper: it returns a NEW list with the
+        element at index i replaced by v, everything else unchanged,
+        walking the list one cell at a time (at index 0, swap in v and
+        keep the rest as-is; otherwise keep this element and recurse on
+        the tail with one fewer step to go). set calls it twice: once to
+        replace the one cell within its row, then again to replace that
+        whole (now-updated) row within the board. *)
+        let set g r c v =
+        let rec replace_nth i v lst =
+        match lst with
+        | [] -> []
+        | x :: rest -> if i = 0 then v :: rest else x :: replace_nth (i - 1) v rest
+        in
+        replace_nth r (replace_nth c v (List.nth g r)) g
+
+        (* keeps a coordinate on the board by wrapping it around the edge *)
+        let wrap n limit = if n < 0 then n + limit else if n>= limit then n - limit else n
+
+          (* the eight (row, column) offsets around a cell *)
+          let neighbor_offsets =
+          [ (-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1) ]
+      </x-ocaml>
+      <p>In order to render the board in the sidebar, you must open the next cell and press <code>Run</code>.
+        You need not read the functions but you might benefit from doing so if you wish to understand what idiomatic
+        OCaml code looks like. As of right now, the board in the sidebar has minimal functionality. This gets built up
+        as you finish writing functions.</p>
+
+
+      <details class="provided">
+        <summary>Show provided code: board setup, drawing, session state</summary>
+        <x-ocaml run-on="click" game-panel="#game-panel">
+          (* PROVIDED, continued -- drawing, session state, patterns, and the
+          board's event wiring. Uses rows/cols/grid/make_grid/get/set/wrap/
+          neighbor_offsets from the cell just above. *)
+          let cell_html r c alive =
+          Printf.sprintf "&lt;td class=\"%s\" data-xo-pos=\"%d:%d\"&gt;&lt;/td&gt;"
+          (if alive then "life-on" else "life-off")
+          r c
+
+          let render_grid g =
+          "&lt;table class=\"life\"&gt;"
+          ^ String.concat ""
+          (List.init rows (fun r ->
+          "&lt;tr&gt;"
+          ^ String.concat ""
+          (List.init cols (fun c -> cell_html r c (get g r c)))
+          ^ "&lt;/tr&gt;"))
+          ^ "&lt;/table&gt;"
+
+          type session = {
+          grid : grid;
+          running : bool;
+          speed : int; (* ms between generations *)
+          gen : int;
+          birth_input : string; (* current text of the Birth box *)
+          death_input : string; (* current text of the Death box *)
+          }
+
+          let speeds = [ ("slow", 500); ("medium", 200); ("fast", 80) ]
+
+          let new_session () =
+          { grid = make_grid (); running = false; speed = 200; gen = 0;
+          birth_input = "3"; death_input = "23" }
+
+          let session = ref (new_session ())
+
+          (* Forward references to functions this cell needs but that don't exist
+          yet -- population (Problem 1), advance (defined right after
+          next_generation), and random_grid (the Stretch problem) all live
+          further down the page. Each ref starts as a stub; the cell that
+          defines the real function reassigns it as its own last line. Declared here, before `controls` below, because
+          `controls` itself reads `!rule_feature_ready`/`!custom_rule_ref`
+          directly -- a plain, single-cell "used before declared" mistake if
+          they lived any later, unrelated to any of the cross-cell
+          forward-reference machinery this comment is otherwise about. *)
+
+          let population_ref : (grid -> int) ref = ref (fun _ -> failwith "not implemented")
+          let advance_ref : (unit -> unit) ref = ref (fun () -> ())
+          let random_grid_ref : (float -> grid) ref = ref (fun _ -> failwith "not implemented")
+
+          (* The same forward-reference trick, for the two stretch problems
+          all the way at the bottom of the page (parse_rule and
+          next_cell_state_general). *)
+          let parse_rule_ref : (int -> int -> int list * int list) ref =
+          ref (fun _ _ -> failwith "not implemented")
+          let next_cell_state_general_ref : (int list * int list -> bool -> int -> bool) ref =
+          ref (fun _ _ _ -> failwith "not implemented")
+          let custom_rule_ref : (string * (int list * int list)) option ref = ref None
+          let rule_feature_ready = ref false
+
+          let button pos label active =
+          Printf.sprintf "&lt;button data-xo-pos=\"%s\" class=\"%s\"&gt;%s&lt;/button&gt;" pos
+          (if active then "on" else "")
+          label
+
+          (* A text field whose value only reaches Game_lib.on_input once the
+          student leaves it *)
+          let text_input pos label value =
+          Printf.sprintf
+          "&lt;label&gt;%s &lt;input type=\"text\" inputmode=\"numeric\" size=\"6\" maxlength=\"9\" data-xo-pos=\"%s\"
+          value=\"%s\"&gt;&lt;/label&gt;"
+          label pos value
+
+          let controls s =
+          "&lt;div class=\"controls\"&gt;"
+          ^ button "run" (if s.running then "Stop" else "Start") s.running
+          ^ button "step" "Step" false
+          ^ button "clear" "Clear" false
+          ^ button "random" "Random" false
+          ^ "&lt;/div&gt;&lt;div class=\"controls\"&gt;"
+          ^ String.concat ""
+          (List.map (fun (name, ms) -> button name name (s.speed = ms)) speeds)
+          ^ "&lt;/div&gt;&lt;div class=\"controls\"&gt;"
+          ^ button "pattern:glider" "Glider" false
+          ^ button "pattern:pulsar" "Pulsar" false
+          ^ button "pattern:spaceship" "Spaceship" false
+          ^ button "pattern:pentadecathlon" "Pentadecathlon" false
+          ^ "&lt;/div&gt;"
+          ^ (if not !rule_feature_ready then ""
+          else
+          "&lt;div class=\"controls\"&gt;"
+          ^ button "rule:conway" "Conway" (!custom_rule_ref = None)
+          ^ button "rule:highlife" "HighLife"
+          (match !custom_rule_ref with Some ("HighLife", _) -> true | _ -> false)
+          ^ button "rule:seeds" "Seeds"
+          (match !custom_rule_ref with Some ("Seeds", _) -> true | _ -> false)
+          ^ button "rule:maze" "Maze"
+          (match !custom_rule_ref with Some ("Maze", _) -> true | _ -> false)
+          ^ "&lt;/div&gt;&lt;div class=\"controls\"&gt;"
+          ^ text_input "birth-input" "Birth" s.birth_input
+          ^ text_input "death-input" "Death" s.death_input
+          ^ "&lt;/div&gt;")
+
+          let beep freq ms = Game_lib.play ~freq ~ms
+
+          (* The clock is REQUESTED, not run, by this cell: [every] states a rate and
+          the page's main thread owns the actual timer (the worker has no DOM and
+          no way to cancel a stale one). [every 0] stops it. *)
+          let sync_clock () =
+          let s = !session in
+          Game_lib.every (if s.running then s.speed else 0)
+
+          let set_speed ms =
+          session := { !session with speed = ms };
+          sync_clock ()
+
+          (* PROVIDED -- a handful of classic Life patterns, so the board can show
+          off what this game is actually capable of before you've written a
+          line of code. *)
+
+          let pattern_of_lines lines ~r0 ~c0 =
+          let g = ref (make_grid ()) in
+          List.iteri
+          (fun dr line ->
+          String.iteri
+          (fun dc ch ->
+          if ch = '#' then g := set !g (wrap (r0 + dr) rows) (wrap (c0 + dc) cols) true)
+          line)
+          lines;
+          !g
+
+          let glider_pattern = [ ".#."; "..#"; "###" ]
+
+          let pulsar_pattern =
+          [
+          "..###...###..";
+          ".............";
+          "#....#.#....#";
+          "#....#.#....#";
+          "#....#.#....#";
+          "..###...###..";
+          ".............";
+          "..###...###..";
+          "#....#.#....#";
+          "#....#.#....#";
+          "#....#.#....#";
+          ".............";
+          "..###...###..";
+          ]
+
+          let spaceship_pattern = [ ".####"; "#...#"; "....#"; "#..#." ]
+          let pentadecathlon_pattern = [ "..#....#.."; "##.####.##"; "..#....#.." ]
+
+          let load_pattern name =
+          match name with
+          | "glider" -> Some (pattern_of_lines glider_pattern ~r0:2 ~c0:2)
+          | "pulsar" -> Some (pattern_of_lines pulsar_pattern ~r0:5 ~c0:5)
+          | "spaceship" -> Some (pattern_of_lines spaceship_pattern ~r0:10 ~c0:1)
+          | "pentadecathlon" -> Some (pattern_of_lines pentadecathlon_pattern ~r0:11 ~c0:7)
+          | _ -> None
+
+          (* PROVIDED. Drawing on the board never depends on a graded exercise, so
+          these live here too -- clicking or dragging a cell to flip it works
+          from the very first page load, before you've solved anything below.*)
+
+          let set_cell g r c alive = set g r c alive
+
+          let toggle_cell g r c =
+          set_cell g r c (not (get g r c))
+
+          let population_opt g = try Some (!population_ref g) with _ -> None
+
+          let refresh () =
+          let s = !session in
+          let population_caption =
+          match population_opt s.grid with
+          | Some n -> string_of_int n
+          | None -> "?"
+          in
+          let rule_caption =
+          match !custom_rule_ref with
+          | None -> ""
+          | Some (label, _) -> Printf.sprintf " &mdash; rule %s" label
+          in
+          Game_lib.render
+          (render_grid s.grid ^ controls s
+          ^ Printf.sprintf "&lt;p&gt;generation %d &mdash; population %s%s&lt;/p&gt;" s.gen
+          population_caption rule_caption)
+
+          let handle_mouse (m : Game_lib.mouse) =
+          let s = !session in
+          match m.pos with
+          | "birth-input" | "death-input" -> ()
+          | _ ->
+          (match m.pos with
+          | "run" ->
+          session := { s with running = not s.running };
+          beep (if s.running then 300 else 480) 70;
+          sync_clock ()
+          | "step" -> if not s.running then !advance_ref ()
+          | "clear" ->
+          session := { s with grid = make_grid (); gen = 0; running = false };
+          beep 240 70;
+          sync_clock ()
+          | "random" -> (
+          match (try Some (!random_grid_ref 0.28) with _ -> None) with
+          | Some g ->
+          session := { s with grid = g; gen = 0 };
+          beep 520 70
+          | None -> ())
+          | pos when String.length pos > 8 && String.sub pos 0 8 = "pattern:" -> (
+          let name = String.sub pos 8 (String.length pos - 8) in
+          match load_pattern name with
+          | Some g ->
+          session := { s with grid = g; gen = 0 };
+          beep 440 90
+          | None -> ())
+          | pos when String.length pos > 5 && String.sub pos 0 5 = "rule:" ->
+          (* Fills in the Birth/Death boxes with the numbers that make up
+          the preset, whether or not parse_rule is written yet -- the
+          whole point of the buttons is to show that tuning Life is just
+          two numbers, even before you can press one. *)
+          let apply label birth death =
+          session := { s with birth_input = string_of_int birth; death_input = string_of_int death };
+          match (try Some (!parse_rule_ref birth death) with _ -> None) with
+          | Some rule ->
+          custom_rule_ref := Some (label, rule);
+          beep 380 90
+          | None -> ()
+          in
+          (match String.sub pos 5 (String.length pos - 5) with
+          | "conway" ->
+          custom_rule_ref := None;
+          session := { s with birth_input = "3"; death_input = "23" };
+          beep 300 90
+          | "highlife" -> apply "HighLife" 36 23
+          | "seeds" -> apply "Seeds" 2 0
+          | "maze" -> apply "Maze" 3 12345
+          | _ -> ())
+          | "slow" -> set_speed 500
+          | "medium" -> set_speed 200
+          | "fast" -> set_speed 80
+          | pos -> (
+          match String.split_on_char ':' pos with
+          | [ r; c ] -> (
+          let r = int_of_string r and c = int_of_string c in
+          match (m.drag, m.button) with
+          | false, _ -> session := { s with grid = toggle_cell s.grid r c }
+          | true, `Left -> session := { s with grid = set_cell s.grid r c true }
+          | true, `Right ->
+          session := { s with grid = set_cell s.grid r c false })
+          | _ -> ()));
+          refresh ()
+
+          let valid_rule_number s =
+          s <> "" && String.for_all (fun ch -> ch >= '0' && ch <= '9' ) s let apply_birth_death birth_str death_str=if
+              valid_rule_number birth_str && valid_rule_number death_str then match (try Some (!parse_rule_ref
+              (int_of_string birth_str) (int_of_string death_str)) with _ -> None)
+              with
+              | Some rule ->
+              custom_rule_ref := Some ("Custom", rule);
+              beep 380 90
+              | None -> ()
+
+              let handle_input pos value =
+              let s = !session in
+              (match pos with
+              | "birth-input" ->
+              session := { s with birth_input = value };
+              apply_birth_death value s.death_input
+              | "death-input" ->
+              session := { s with death_input = value };
+              apply_birth_death s.birth_input value
+              | _ -> ());
+              refresh ()
+
+              let handle_key key =
+              (match key with
+              | " " | "Spacebar" ->
+              session := { !session with running = not !session.running };
+              sync_clock ()
+              | "Enter" -> if not !session.running then !advance_ref ()
+              | "c" | "C" -> session := { !session with grid = make_grid (); gen = 0 }
+              | "r" | "R" -> (
+              match (try Some (!random_grid_ref 0.28) with _ -> None) with
+              | Some g -> session := { !session with grid = g; gen = 0 }
+              | None -> ())
+              | _ -> ());
+              refresh ()
+
+              let () = Game_lib.on_mouse handle_mouse
+              let () = Game_lib.on_key handle_key
+              let () = Game_lib.on_input handle_input
+
+              let () =
+              Game_lib.on_tick (fun () ->
+              !advance_ref ();
+              refresh ())
+
+              (* Repaints whenever some OTHER cell (population, count_live_neighbors,
+              advance, ...) finishes running -- see src/game_host.ml's
+              [repaint_all]. Without this, solving a problem only became visible on
+              the board after the next click/keypress/tick, since [refresh] called
+              from that OTHER cell's own code paints into that cell's own output,
+              never into #game-panel. *)
+              let () = Game_lib.on_repaint refresh
+
+              let () = refresh ()
+        </x-ocaml>
+      </details>
+
+      <h2>Background</h2>
+
+
+      <!-- ================= PROBLEM 1: population ================= -->
+      <h3>Problem 1: <code>population</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q1">
+        <p>How many cells on the whole board are alive right now? You must iterate over every row and column for this.
+        </p>
+        <x-ocaml run-on="click">let population g =
+          failwith "not implemented"
+
+          let () = population_ref := population</x-ocaml>
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          check (population (make_grid ()) = 0) "empty grid has population 0";
+          check (population (List.init rows (fun _ -> List.init cols (fun _ -> true))) = rows * cols)
+          "fully alive grid has population rows*cols";
+          let g = set (set (set (make_grid ()) 0 0 true) 0 1 true) 5 5 true in
+          check (population g = 3) "hand-set 3-cell grid has population 3";
+          print_endline "all tests passed"</x-ocaml>
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let population g =
+          let count_row row =
+          List.fold_left (fun total alive -> if alive then total + 1 else total) 0 row
+          in
+          List.fold_left (fun total row -> total + count_row row) 0 g</x-ocaml>
+        <p>This uses two <code>List.fold_left</code> calls. One counts the live
+          cells in a single row. The other adds up those row counts across the
+          whole grid.</p>
+      </details>
+
+      <!-- ================= PROBLEM 2: count_live_neighbors ================= -->
+      <h3>Problem 2: <code>count_live_neighbors</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q2">
+        <p>How many of the cell at <code>(r, c)</code>'s eight neighbors are alive?
+          Use <code>wrap</code> so a cell right on the edge of the board still sees
+          all eight.</p>
+        <x-ocaml run-on="click">let count_live_neighbors g r c =
+          failwith "not implemented"</x-ocaml>
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          let g = set (set (set (make_grid ()) 5 4 true) 5 5 true) 5 6 true in
+          check (count_live_neighbors g 5 5 = 2) "blinker middle cell sees 2 live neighbors";
+          check (count_live_neighbors g 5 4 = 1) "blinker end cell sees 1 live neighbor";
+
+          let g2 = set (make_grid ()) 10 10 true in
+          check (count_live_neighbors g2 10 10 = 0)
+          "a live cell does not count itself as its own neighbor";
+
+          let g3 = set (set (make_grid ()) 23 23 true) 0 23 true in
+          check (count_live_neighbors g3 0 0 = 2)
+          "corner (0,0) sees neighbors that wrap off the opposite edges";
+          print_endline "all tests passed"</x-ocaml>
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let count_live_neighbors g r c =
+          let neighbor_is_alive (dr, dc) =
+          get g (wrap (r + dr) rows) (wrap (c + dc) cols)
+          in
+          let alive_neighbors =
+          List.filter (fun offset -> neighbor_is_alive offset) neighbor_offsets
+          in
+          List.length alive_neighbors</x-ocaml>
+        <p><code>neighbor_is_alive</code> tests one offset against the board.
+          <code>List.filter</code> keeps the offsets that pass that test, and
+          <code>List.length</code> counts how many are left.
+        </p>
+      </details>
+
+      <!-- ================= PROBLEM 3: next_cell_state ================= -->
+      <h3>Problem 3: <code>next_cell_state</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q3">
+        <p>Given whether a cell is alive right now and how many live neighbors
+          it has, is it alive next generation?</p>
+        <ul>
+          <li>a live cell with 2 or 3 live neighbors survives; anything else dies</li>
+          <li>a dead cell with exactly 3 live neighbors is born</li>
+        </ul>
+        <x-ocaml run-on="click">let next_cell_state alive live_neighbors =
+          failwith "not implemented"</x-ocaml>
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          check (next_cell_state true 2 = true) "a live cell with 2 neighbors survives";
+          check (next_cell_state true 3 = true) "a live cell with 3 neighbors survives";
+          check (next_cell_state true 1 = false) "a live cell with 1 neighbor dies (underpopulation)";
+          check (next_cell_state true 4 = false) "a live cell with 4 neighbors dies (overpopulation)";
+          check (next_cell_state false 3 = true) "a dead cell with exactly 3 neighbors is born";
+          check (next_cell_state false 2 = false) "a dead cell with 2 neighbors stays dead";
+          print_endline "all tests passed"</x-ocaml>
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let next_cell_state alive live_neighbors =
+          match (alive, live_neighbors) with
+          | true, (2 | 3) -> true
+          | false, 3 -> true
+          | _ -> false</x-ocaml>
+        <p>This is a direct transcription of the two rules into pattern matches.
+          The first two cases are survive-on-2-or-3 and born-on-exactly-3. The
+          wildcard below them marks everything else dead.</p>
+      </details>
+
+      <!-- PROVIDED, not a problem: next_generation, composing problems 2+3.
+     The WHY (read old / write new) is in the page prose below, always
+     visible -- only the code itself is collapsed (`<details
+     class="provided">`, purely visual, see the CSS rule above). This
+     cell stays a normal `run-on="click"` dependency (not `peek`) -- the
+     panel genuinely needs it. -->
+      <h3>Provided: <code>next_generation</code></h3>
+      <p>The next function is provided to you. It computes the next generation from
+        the current board, and it returns a brand new board rather than changing
+        the one you gave it. This demonstrates the immutability of lists. In order to use it, you must open it and run
+        it
+      </p>
+      <details class="provided">
+        <summary>Show provided code: next_generation</summary>
+        <x-ocaml run-on="click">
+          let next_generation g =
+          List.init rows (fun r ->
+          List.init cols (fun c -> next_cell_state (get g r c) (count_live_neighbors g r c)))
+        </x-ocaml>
+      </details>
+
+      The function above simply stores the newly created list. We require a lot more additional plumbing to actually
+      display it. The cell block below does that. In order to use it, you must open it and run it
+      <h3>Provided: advancing a generation</h3>
+      <details class="provided">
+        <summary>Show provided code: advance</summary>
+        <x-ocaml run-on="click">
+          (* Composes with count_live_neighbors (Problem 2, above) the same
+          way next_generation composes with next_cell_state -- used only
+          once a rule preset button is pressed (see the setup cell's
+          custom_rule_ref), which needs the general STUDENT rule function
+          from further down the page instead of the hardcoded
+          next_cell_state this cell already has. *)
+          let next_generation_general (birth, survive) g =
+          List.init rows (fun r ->
+          List.init cols (fun c ->
+          !next_cell_state_general_ref (birth, survive) (get g r c)
+          (count_live_neighbors g r c)))
+
+          let advance () =
+          let s = !session in
+          let next_grid =
+          match !custom_rule_ref with
+          | None -> (try Some (next_generation s.grid) with _ -> None)
+          | Some (_, rule) -> (try Some (next_generation_general rule s.grid) with _ -> None)
+          in
+          match next_grid with
+          | None -> () (* count_live_neighbors / next_cell_state not real yet *)
+          | Some g' ->
+          let died_out =
+          match population_opt g', population_opt s.grid with
+          | Some 0, Some p when p > 0 -> true
+          | _ -> false
+          in
+          let stalled = g' = s.grid in
+          session := { s with grid = g'; gen = s.gen + 1 };
+          if died_out then (
+          beep 160 260;
+          session := { !session with running = false };
+          sync_clock ())
+          else if stalled && s.running then (
+          (* A still life: nothing will ever change again, so stop rather than
+          burn a tick every 200ms redrawing an identical board. *)
+          beep 330 120;
+          session := { !session with running = false };
+          sync_clock ())
+
+          let () = advance_ref := advance
+        </x-ocaml>
+      </details>
+
+
+      <!-- PROVIDED, not a problem, and no live cell here either: the four
+     pattern buttons (glider/pulsar/spaceship/pentadecathlon) are already live in
+     the sidebar, since load_pattern lives in the setup cell above.
+     Purely a "look what this game can do" moment before the stretch
+     problems -- no code to write, nothing gated on it. -->
+      <h3>Provided: try some classics</h3>
+      <p>Before the stretch problems, worth a minute just to look: four buttons
+        have appeared in the sidebar's third row, each dropping a famous Life
+        pattern onto the board. <strong>Glider</strong> is the simplest thing that
+        moves: five cells that walk diagonally forever, reproducing their own
+        shape every 4 generations. <strong>Pulsar</strong> doesn't move at all. The pattern is 48 cells that expand,
+        contract, and return to exactly their starting
+        shape every 3 generations. <strong>Spaceship</strong> is a glider's bigger, faster cousin, crossing the
+        board in a straight line instead of diagonally. <strong>Pentadecathlon</strong>
+        doesn't move either, like Pulsar, but on a much longer clock: it steps
+        through 15 generations, flashing at both ends, before landing back on
+        exactly its starting shape.</p>
+
+      <!-- ================= STRETCH: random_grid ================= -->
+      <h3>Stretch: <code>random_grid</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q4">
+        <p>A board where each cell is alive with roughly probability <code>p</code>,
+          somewhere from 0.0 to 1.0. </p>
+        <x-ocaml run-on="click">let random_grid p =
+          failwith "not implemented"
+
+          (* PROVIDED -- registers your function with the board (see the setup
+          cell's random_grid_ref) so Random and the r/R key pick it up on the
+          very next press. *)
+          let () = random_grid_ref := random_grid</x-ocaml>
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let random_grid p =
+          List.init rows (fun _ -> List.init cols (fun _ -> Random.float 1.0 &lt; p))</x-ocaml>
+        <p>Unlike the array version of this exercise, there's no in-place fill
+          here at all -- a list has no cell to mutate, so the only way to build
+          one is to hand <code>List.init</code> a function that produces each
+          cell fresh. The outer <code>List.init</code> builds the rows, the
+          inner one fills each row, and <code>Random.float 1.0 &lt; p</code> is
+          the coin flip: a number is picked uniformly between 0.0 and 1.0, and
+          it lands below <code>p</code> with probability exactly <code>p</code>.</p>
+      </details>
+
+      <!-- ================= STRETCH: parse_rule ================= -->
+      <!-- This cell carries locked-until-prev (see src/cell.ml's
+           update_lock / the CSS at the top of the file): it starts greyed
+           out and read-only, and unlocks itself the moment random_grid's
+           attempt cell (immediately above, skipping over its peek
+           solution) reaches Run_ok. Purely a presentation gate -- the
+           backward run-cascade would already force random_grid to run
+           first regardless; this just makes that visible before you try,
+           instead of only as an error after. -->
+      <h3>Stretch: <code>parse_rule</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q5">
+        <p>Conway's rules ("a live cell survives on 2 or 3 neighbors, a dead
+          cell is born on exactly 3") are really just one example of a whole
+          family of similar automata. Two numbers describe any of them: a
+          <strong>Birth</strong> number, whose digits are the neighbor counts
+          that bring a dead cell to life, and a <strong>Death</strong> number,
+          whose digits are the neighbor counts a live cell survives on.
+          Conway is birth <code>3</code>, death <code>23</code> -- born on
+          exactly 3 neighbors, survives on 2 or 3. Change one digit -- birth
+          <code>36</code> instead of <code>3</code> -- and you get "HighLife",
+          a different automaton on the exact same grid, famous for containing
+          a small pattern that <em>replicates itself</em>, something standard
+          Life has no known example of. <code>parse_rule</code> turns those
+          two numbers into the two lists <code>next_cell_state_general</code>
+          (next problem) will actually use, one <code>int</code> per digit:
+          <code>parse_rule 3 23</code> becomes <code>([3], [2; 3])</code>.
+        </p>
+        <x-ocaml run-on="click" locked-until-prev>let parse_rule birth death =
+          failwith "not implemented"
+
+          (* PROVIDED -- registers your function with the board (see the setup
+          cell's parse_rule_ref); the rule preset buttons and the Birth/Death
+          text boxes in the sidebar call through this the moment you press or
+          edit one, no re-run needed. *)
+          let () = parse_rule_ref := parse_rule</x-ocaml>
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          check (parse_rule 3 23 = ([3], [2; 3])) "parse_rule 3 23 = ([3], [2;3]) (standard Life)";
+          check (parse_rule 36 23 = ([3; 6], [2; 3])) "parse_rule 36 23 = ([3;6], [2;3]) (HighLife)";
+          check (parse_rule 2 0 = ([2], [])) "parse_rule 2 0 = ([2], []) (Seeds has no survival rule)";
+          print_endline "all tests passed"</x-ocaml>
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let parse_rule birth death =
+          let digits_of n =
+          let rec loop n acc =
+          if n <= 0 then acc
+          else loop (n / 10) (n mod 10 :: acc)
+          in
+          loop n []
+          in
+          (digits_of birth, digits_of death)</x-ocaml>
+        <p><code>digits_of</code> turns a number like <code>36</code> into the
+          list <code>[3; 6]</code> by peeling digits off the low end with
+          arithmetic: <code>n mod 10</code> is the last digit, <code>n / 10</code>
+          is everything before it. <code>loop</code> keeps doing that, consing
+          each digit onto the front of <code>acc</code> as it goes, so the
+          accumulator ends up in the right order even though the digits are
+          discovered least-significant first -- <code>36</code> gives up
+          <code>6</code>, then <code>3</code>, and consing <code>3</code> onto
+          the front of <code>[6]</code> puts it back in reading order.
+          <code>0</code> (or a negative number) has no digits worth keeping,
+          so it becomes <code>[]</code> -- exactly the empty survive rule
+          Seeds needs.</p>
+      </details>
+
+      <!-- ================= STRETCH: next_cell_state_general ================= -->
+      <!-- Same lock mechanism as parse_rule above, gated on parse_rule's
+           attempt cell instead of random_grid's -- genuinely needed here,
+           not just pedagogically tidy: this function's first argument IS
+           parse_rule's return shape, so trying to write it first would
+           mean guessing at a type nobody has shown you yet. -->
+      <h3>Stretch: <code>next_cell_state_general</code></h3>
+      <div class="quiz quiz-code" data-quiz-id="life-q6">
+        <p>The general version of Problem 3's <code>next_cell_state</code>: instead
+          of the rule numbers 2, 3 and 3 baked directly into the code, take the
+          <code>(birth, survive)</code> lists <code>parse_rule</code> just produced
+          and look the neighbor count up in whichever one applies --
+          <code>survive</code> if the cell is alive now, <code>birth</code> if it's
+          dead. You may also use the convenient helper function: <code>List.mem</code>. It answers "is this number in that list?"
+          directly, so there's no need for a match at all.
+        </p>
+        <x-ocaml run-on="click" locked-until-prev>let next_cell_state_general (birth, survive) alive live_neighbors =
+          failwith "not implemented"
+
+          let () = next_cell_state_general_ref := next_cell_state_general
+          let () = rule_feature_ready := true</x-ocaml>
+        <!-- HIDDEN TEST CELL: matches next_cell_state exactly on
+             (parse_rule 3 23) for all (alive, live_neighbors)
+             combinations 0-8; diverges correctly at (false, 6) --
+             standard Life stays dead, (parse_rule 36 23) is alive. -->
+      </div>
+      <details class="solution">
+        <summary>Show reference solution</summary>
+        <p>Reference solution:</p>
+        <x-ocaml run-on="peek">let next_cell_state_general (birth, survive) alive live_neighbors =
+          if alive then List.mem live_neighbors survive else List.mem live_neighbors birth</x-ocaml>
+        <p>Everything Problem 3's <code>match</code> hardcoded as literal numbers
+          is now data: <code>survive</code> and <code>birth</code> are just lists to
+          search, and <code>List.mem</code> does the searching. Feed it
+          <code>parse_rule 3 23</code> and it behaves exactly like
+          <code>next_cell_state</code>; feed it two different numbers and the whole
+          simulation changes rule without a single line of code being edited.
+        </p>
+      </details>
+
+      <!-- ================= THE GAME (live since your first Run) ================= -->
+
+    </div><!-- /content -->
+
+    <aside class="sidebar">
+      <h3>Board</h3>
+      <div id="game-panel"></div>
+    </aside>
+
+  </div><!-- /layout -->
+
+  <!-- "Check" button wiring for the hidden data-quiz-test cells inside a
+     .quiz-code div (see Problem 1 above for the first one). Trimmed port
+     of ocaml_nptel's tools/nptel-build/lib/emit.ml (setupCodeQuiz) --
+     that framework already solves "grade a student's cell against a
+     hidden assertion cell" against stock x-ocaml, with zero src/worker/
+     protocol changes, so this reuses it verbatim rather than inventing
+     new plumbing. Dropped versus the original: MCQ-quiz handling,
+     reportQuiz's analytics-backend POST, and localStorage persistence --
+     none of which exist (or make sense) on a standalone practice page.
+     Placed at the END of the body, after every .quiz-code div: querying
+     for x-ocaml/.quiz-code elements from a script any earlier (e.g. right
+     after the x-ocaml.js loader, before the page's own content has
+     parsed) finds an EMPTY node list, and an empty list's [.every(...)]
+     is vacuously true -- the readiness wait below would exit immediately
+     instead of ever finding the real cells. -->
+  <script>
+    function setupCodeQuiz(quiz) {
+      const cells = Array.from(quiz.querySelectorAll('x-ocaml'));
+      const testCell = cells.find((c) => c.hasAttribute('data-quiz-test'));
+      const nonTest = cells.filter((c) => !c.hasAttribute('data-quiz-test'));
+      const studentCell = nonTest[nonTest.length - 1];
+      if (!studentCell || !testCell || quiz.querySelector('.quiz-controls')) return;
+
+      const controls = document.createElement('div');
+      controls.className = 'quiz-controls';
+      const checkBtn = document.createElement('button');
+      checkBtn.type = 'button';
+      checkBtn.className = 'quiz-check';
+      checkBtn.textContent = 'Check';
+      const showBtn = document.createElement('button');
+      showBtn.type = 'button';
+      showBtn.className = 'quiz-show-tests';
+      showBtn.textContent = '▸ Show tests';
+      const status = document.createElement('span');
+      status.className = 'quiz-status';
+      controls.append(checkBtn, showBtn, status);
+      studentCell.parentNode.insertBefore(controls, studentCell.nextSibling);
+
+      function outputText() {
+        const sr = testCell.shadowRoot;
+        if (!sr) return '';
+        return Array.from(sr.querySelectorAll('.caml_stdout, .caml_stderr, .caml_meta'))
+          .map((e) => e.textContent || '')
+          .join('\n');
+      }
+      function readState() {
+        const out = outputText();
+        if (!out) return 'pending';
+        if (/Error|Exception|Failure|Assertion/i.test(out)) return 'fail';
+        if (/all tests pass/i.test(out)) return 'pass';
+        return 'pending';
+      }
+      function firstFailureLine() {
+        const line = outputText()
+          .split('\n')
+          .find((l) => /Error|Exception|Failure|Assertion/i.test(l));
+        if (!line) return null;
+        const f = line.match(/Failure\s+"([^"]*)"/);
+        if (f) return 'failed: ' + f[1];
+        const s = line.trim();
+        return s.length > 110 ? s.slice(0, 107) + '…' : s;
+      }
+      showBtn.addEventListener('click', () => {
+        const show = !quiz.classList.contains('show-tests');
+        quiz.classList.toggle('show-tests', show);
+        showBtn.textContent = show ? '▾ Hide tests' : '▸ Show tests';
+      });
+      checkBtn.addEventListener('click', () => {
+        status.textContent = 'Running…';
+        status.className = 'quiz-status running';
+        // Blank stale output first, else readState can read the OLD
+        // verdict before the new run lands.
+        testCell.shadowRoot
+          ?.querySelectorAll('.caml_stdout, .caml_stderr, .caml_meta')
+          .forEach((e) => {
+            e.textContent = '';
+          });
+        testCell.shadowRoot?.querySelector('.run_btn button')?.click();
+        let tries = 0;
+        const tick = setInterval(() => {
+          tries++;
+          const s = readState();
+          // 80 tries (16s) was too tight on a cold page: Check re-runs the
+          // whole predecessor chain (setup cells, earlier problems), which
+          // on a first, uncached worker dispatch can take well over that
+          // before the test cell's own output lands -- it isn't broken,
+          // just slow, and reporting "Timed out" instead of waiting looks
+          // identical to a real failure but skips the auto-reveal a real
+          // failure gets.
+          if (s !== 'pending' || tries > 350) {
+            clearInterval(tick);
+            if (s === 'pass') {
+              status.textContent = '✓ All tests pass';
+              status.className = 'quiz-status pass';
+              quiz.classList.add('answered', 'quiz-correct');
+            } else if (s === 'fail') {
+              const why = firstFailureLine();
+              status.textContent = why ? '✗ ' + why : '✗ Some assertions failed';
+              status.className = 'quiz-status fail';
+              quiz.classList.remove('quiz-correct');
+              quiz.classList.add('answered');
+              // Auto-reveal the tests so the student can see what failed.
+              quiz.classList.add('show-tests');
+              showBtn.textContent = '▾ Hide tests';
+            } else {
+              status.textContent = 'Timed out';
+              status.className = 'quiz-status fail';
+            }
+          }
+        }, 200);
+      });
+    }
+
+    (async function () {
+      const cells = () => Array.from(document.querySelectorAll('x-ocaml'));
+      while (cells().length === 0 || !cells().every((c) => c.shadowRoot?.querySelector('.cm-content'))) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      document.querySelectorAll('.quiz-code').forEach(setupCodeQuiz);
+    })();
+  </script>
+
+</body>
+
+</html>
