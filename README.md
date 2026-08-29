@@ -10,6 +10,10 @@ The workshop has three parts:
 2. Data types and pattern matching
 3. Modules and abstraction
 
+It also includes interactive Game of Life and Tic-Tac-Toe exercises contributed
+by [Smayan Agarwal](https://github.com/SmayanAgarwal) in
+[PR #3](https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3).
+
 Every OCaml block is editable and runnable in the browser. Each page can
 also switch into a reveal.js slide deck for the live session.
 
@@ -41,6 +45,7 @@ renders the site, and runs the browser smoke checks.
 - `tools/workshop-build/` — Markdown-to-HTML builder
 - `assets/x-ocaml/` — prebuilt in-browser OCaml runtime
 - `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
+- `games/` — standalone interactive practice exercises
 - `tools/build-site.sh` — complete site build
 
 ## Sources and licensing

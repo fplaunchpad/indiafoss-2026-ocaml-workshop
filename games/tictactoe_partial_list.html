@@ -1,20 +1,12 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tic-Tac-Toe practice (list version)</title>
   <style>
-    /* Design tokens and type/color recipes lifted verbatim from the real
-     course site's chapter.css (kayceesrk/ocaml_nptel,
-     assets/css/chapter.css) -- same variable names, same font stacks, same
-     accent color -- so this page reads as part of that course rather than
-     a one-off demo. Not a <link> to the actual stylesheet: that file also
-     styles a sticky course-outline sidebar, a slide-mode toggle, and other
-     page-chrome this standalone page has no data to drive. Only the
-     typography/color rules that don't depend on that chrome are copied
-     here; layout below (.layout/.content/.sidebar for the game board) is
-     specific to this page. */
+    /* Match the typography and palette used by the workshop pages. */
     :root {
       --fg: #1c1c1c;
       --muted: #5a5a5a;
@@ -57,6 +49,12 @@
 
     p {
       margin: 0.9rem 0;
+    }
+
+    .workshop-nav, .credit {
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 0.85rem;
     }
 
     code {
@@ -136,11 +134,7 @@
       border-left-color: #b35858;
     }
 
-    /* "Check" button + pass/fail status for a quiz-code cell's hidden
-     data-quiz-test sibling -- CSS/JS ported from ocaml_nptel's
-     tools/nptel-build (chapter.css's ".quiz-code .quiz-controls" rules /
-     emit.ml's setupCodeQuiz), which already solves this against stock
-     x-ocaml with no src/worker/protocol changes. */
+    /* "Check" button and pass/fail status for each hidden test cell. */
     .quiz-code .quiz-controls {
       display: flex;
       align-items: center;
@@ -333,7 +327,13 @@
 </head>
 
 <body>
-  <script async src="x-ocaml.js" src-worker="x-ocaml.worker.js"></script>
+  <script>
+    const xOcaml = document.createElement('script');
+    xOcaml.src = new URL('x-ocaml.js', document.baseURI).href;
+    xOcaml.setAttribute('src-worker', new URL('x-ocaml.worker.js', document.baseURI).href);
+    xOcaml.async = true;
+    document.head.appendChild(xOcaml);
+  </script>
 
   <!-- ============================================================
      Layout: .content (the exercise, left/top) and .sidebar (a sticky
@@ -392,7 +392,10 @@
   <div class="layout">
     <div class="content">
 
+      <p class="workshop-nav"><a href="../index.html">← Workshop home</a></p>
       <h1>Practice: Tic-Tac-Toe <small style="color: var(--muted); font-weight: 400;">(list version)</small></h1>
+      <p class="credit">Contributed by <a href="https://github.com/SmayanAgarwal">Smayan Agarwal</a>
+        in <a href="https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3">PR #3</a>.</p>
 
       <p>Five small functions build the whole game: <code>current_player</code>
         runs the turn engine, <code>line_winner</code>, <code>winner</code>, and
@@ -821,15 +824,7 @@
 
   </div><!-- /layout -->
 
-  <!-- "Check" button wiring for the hidden data-quiz-test cells inside a
-     .quiz-code div (see Problem 1 above for the first one). Trimmed port
-     of ocaml_nptel's tools/nptel-build/lib/emit.ml (setupCodeQuiz) --
-     that framework already solves "grade a student's cell against a
-     hidden assertion cell" against stock x-ocaml, with zero src/worker/
-     protocol changes, so this reuses it verbatim rather than inventing
-     new plumbing. Dropped versus the original: MCQ-quiz handling,
-     reportQuiz's analytics-backend POST, and localStorage persistence --
-     none of which exist (or make sense) on a standalone practice page.
+  <!-- "Check" button wiring for hidden test cells inside each exercise.
      Placed at the END of the body, after every .quiz-code div: querying
      for x-ocaml/.quiz-code elements from a script any earlier finds an
      EMPTY node list, and an empty list's [.every(...)] is vacuously true

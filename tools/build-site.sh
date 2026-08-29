@@ -36,7 +36,7 @@ if [ "$COPY_ASSETS" = "1" ]; then
   cp -R "$REPO_ROOT/assets" "$REPO_ROOT/_site/assets"
 fi
 
-if [ "$COPY_ASSETS" = "1" ] && [ -d "$REPO_ROOT/games" ]; then
+if [ -d "$REPO_ROOT/games" ]; then
   rm -rf "$REPO_ROOT/_site/games"
   cp -R "$REPO_ROOT/games" "$REPO_ROOT/_site/games"
 fi
@@ -71,6 +71,7 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
     .part-title { display: block; font-weight: 700; }
     .part-summary { display: block; margin-top: .15rem; color: var(--text);
       font-size: .9rem; }
+    .games { margin-bottom: 2.5rem; }
     .after { padding-top: 1.5rem; border-top: 1px solid var(--rule); }
     .after ul { padding-left: 1.25rem; }
   </style>
@@ -97,6 +98,20 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
         <span class="part-summary">Signatures and abstraction</span>
       </span></a></li>
     </ol>
+    <section>
+      <h2>Practice with games</h2>
+      <p>Apply the ideas from Part 2 in a larger interactive exercise.</p>
+      <ul class="parts games">
+        <li><a href="games/life_partial_list.html"><span class="part-no">Exercise</span><span>
+          <span class="part-title">Conway's Game of Life</span>
+          <span class="part-summary">Build a simulation using lists</span>
+        </span></a></li>
+        <li><a href="games/tictactoe_partial_list.html"><span class="part-no">Exercise</span><span>
+          <span class="part-title">Tic-Tac-Toe</span>
+          <span class="part-summary">Build a playable game step by step</span>
+        </span></a></li>
+      </ul>
+    </section>
     <section class="after">
       <h2>After the workshop</h2>
       <ul>

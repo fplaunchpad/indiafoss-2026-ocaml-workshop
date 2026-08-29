@@ -1,15 +1,12 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Game of Life practice (list version)</title>
   <style>
-    /* Palette and type system lifted from the ocaml_nptel chapter shell
-     (assets/css/chapter.css) -- same variables, same serif-body /
-     sans-heading split, same code and quiz/solution box treatment --
-     so this standalone practice page reads like a lecture chapter
-     rather than a generic worksheet. */
+    /* Match the typography and palette used by the workshop pages. */
     :root {
       --fg: #1c1c1c;
       --muted: #5a5a5a;
@@ -36,6 +33,12 @@
 
     a {
       color: var(--accent);
+    }
+
+    .workshop-nav, .credit {
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 0.85rem;
     }
 
     h1,
@@ -157,11 +160,7 @@
       margin-top: 0.6rem;
     }
 
-    /* "Check" button + pass/fail status for a quiz-code cell's hidden
-     data-quiz-test sibling -- CSS/JS ported from ocaml_nptel's
-     tools/nptel-build (chapter.css's ".quiz-code .quiz-controls" rules /
-     emit.ml's setupCodeQuiz), which already solves this against stock
-     x-ocaml with no src/worker/protocol changes. */
+    /* "Check" button and pass/fail status for each hidden test cell. */
     .quiz-code .quiz-controls {
       display: flex;
       align-items: center;
@@ -355,7 +354,13 @@
 </head>
 
 <body>
-  <script async src="x-ocaml.js" src-worker="x-ocaml.worker.js"></script>
+  <script>
+    const xOcaml = document.createElement('script');
+    xOcaml.src = new URL('x-ocaml.js', document.baseURI).href;
+    xOcaml.setAttribute('src-worker', new URL('x-ocaml.worker.js', document.baseURI).href);
+    xOcaml.async = true;
+    document.head.appendChild(xOcaml);
+  </script>
 
   <!-- ============================================================
      Layout: .content (the exercise, left/top) and .sidebar (a sticky
@@ -455,8 +460,11 @@
   <div class="layout">
     <div class="content">
 
+      <p class="workshop-nav"><a href="../index.html">← Workshop home</a></p>
       <h1>Practice: Conway's Game of Life <small style="color: var(--muted); font-weight: 400;">(list version)</small>
       </h1>
+      <p class="credit">Contributed by <a href="https://github.com/SmayanAgarwal">Smayan Agarwal</a>
+        in <a href="https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3">PR #3</a>.</p>
 
       <p>Conway's <strong>Game of Life</strong> is a grid of cells, each alive or
         dead, and every cell updates at once under two rules. A live cell
@@ -1166,15 +1174,7 @@
 
   </div><!-- /layout -->
 
-  <!-- "Check" button wiring for the hidden data-quiz-test cells inside a
-     .quiz-code div (see Problem 1 above for the first one). Trimmed port
-     of ocaml_nptel's tools/nptel-build/lib/emit.ml (setupCodeQuiz) --
-     that framework already solves "grade a student's cell against a
-     hidden assertion cell" against stock x-ocaml, with zero src/worker/
-     protocol changes, so this reuses it verbatim rather than inventing
-     new plumbing. Dropped versus the original: MCQ-quiz handling,
-     reportQuiz's analytics-backend POST, and localStorage persistence --
-     none of which exist (or make sense) on a standalone practice page.
+  <!-- "Check" button wiring for hidden test cells inside each exercise.
      Placed at the END of the body, after every .quiz-code div: querying
      for x-ocaml/.quiz-code elements from a script any earlier (e.g. right
      after the x-ocaml.js loader, before the page's own content has
