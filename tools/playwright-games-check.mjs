@@ -18,11 +18,29 @@ try {
   const landingText = await landing.locator('main').innerText();
   const gameLinks = await landing.locator('.games a').evaluateAll(links =>
     links.map(link => link.getAttribute('href')));
+  const partLabels = await landing.locator('.parts:not(.games) .part-no')
+    .allTextContents();
+  const gameCardTextDoesNotOverlap = async () => landing.locator('.games a')
+    .evaluateAll(cards => cards.every(card => {
+      const label = card.querySelector('.part-no')?.getBoundingClientRect();
+      const title = card.querySelector('.part-title')?.getBoundingClientRect();
+      if (!label || !title) return false;
+      return label.right <= title.left || title.right <= label.left
+        || label.bottom <= title.top || title.bottom <= label.top;
+    }));
   if (!landingText.includes('Final 45-minute game lab')
       || !landingText.includes('saved locally in this browser')
+      || partLabels.join(',') !== '1,2,3'
       || !gameLinks.includes('games/life_partial_list.html')
       || !gameLinks.includes('games/tictactoe_partial_list.html')) {
     throw new Error('landing page is missing the game-lab guidance or links');
+  }
+  if (!await gameCardTextDoesNotOverlap()) {
+    throw new Error('game-card label overlaps its title at desktop width');
+  }
+  await landing.setViewportSize({ width: 390, height: 800 });
+  if (!await gameCardTextDoesNotOverlap()) {
+    throw new Error('game-card label overlaps its title at mobile width');
   }
   await landing.close();
 

@@ -72,6 +72,10 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
     .part-summary { display: block; margin-top: .15rem; color: var(--text);
       font-size: .9rem; }
     .games { margin-bottom: 2.5rem; }
+    .games a { grid-template-columns: minmax(4.5rem, max-content) minmax(0, 1fr); }
+    @media (max-width: 480px) {
+      .games a { grid-template-columns: 1fr; gap: .25rem; }
+    }
     .after { padding-top: 1.5rem; border-top: 1px solid var(--rule); }
     .after ul { padding-left: 1.25rem; }
   </style>
@@ -85,15 +89,15 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
     <a class="start" href="01-basics.html">Start the workshop →</a>
     <h2>Or jump to a part</h2>
     <ol class="parts">
-      <li><a href="01-basics.html"><span class="part-no">Part 1</span><span>
+      <li><a href="01-basics.html"><span class="part-no">1</span><span>
         <span class="part-title">OCaml Basics</span>
         <span class="part-summary">Values, functions, and recursion</span>
       </span></a></li>
-      <li><a href="02-data-types.html"><span class="part-no">Part 2</span><span>
+      <li><a href="02-data-types.html"><span class="part-no">2</span><span>
         <span class="part-title">Data Types</span>
         <span class="part-summary">Variants, pattern matching, and records</span>
       </span></a></li>
-      <li><a href="03-modules.html"><span class="part-no">Part 3</span><span>
+      <li><a href="03-modules.html"><span class="part-no">3</span><span>
         <span class="part-title">Modules</span>
         <span class="part-summary">Signatures and abstraction</span>
       </span></a></li>

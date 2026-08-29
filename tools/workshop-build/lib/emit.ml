@@ -106,7 +106,7 @@ let head ~asset_root ~(fm : Frontmatter.t) =
 let header_bar ~(fm : Frontmatter.t) ~has_slides =
   let lecture_id =
     match fm.part with
-    | Some part -> Printf.sprintf "Part %d of 3" part
+    | Some part -> Printf.sprintf "%d of 3" part
     | _ -> ""
   in
   let title = if fm.title = "" then "(untitled)" else Parse.html_escape fm.title in
@@ -1281,7 +1281,7 @@ let render_sidebar ~(manifest : Manifest.t option) =
           in
           Buffer.add_string buf
             (Printf.sprintf
-               "      <li%s><a href=\"%s.html\"><span class=\"part-no\">Part %d</span> %s</a></li>\n"
+               "      <li%s><a href=\"%s.html\"><span class=\"part-no\">%d</span> %s</a></li>\n"
                current entry.slug entry.part (Parse.html_escape entry.title)))
         m.parts;
       Buffer.add_string buf "    </ul>\n";
