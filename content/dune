@@ -1,0 +1,8 @@
+; Validate the OCaml code in every workshop part by running it under
+; ocaml-mdx. Each `ocaml` fenced block in a .md file is compiled
+; and (where applicable) evaluated.
+(mdx
+ (files
+  01-basics.md
+  02-data-types.md
+  03-modules.md))

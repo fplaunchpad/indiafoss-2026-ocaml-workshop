@@ -7,7 +7,7 @@ on:
 
 # We do not build x-ocaml (vendored under vendor/x-ocaml) in CI: the
 # js_of_ocaml link step is multi-minute and produces 80MB artifacts.
-# We only test the OCaml side of the toolchain (nptel-build) and the
+# We only test the OCaml side of the toolchain (workshop-build) and the
 # .md -> HTML pipeline against the integration fixture.
 
 jobs:
@@ -18,32 +18,7 @@ jobs:
         with:
           submodules: false
 
-      # Fast lecture-source checks first: no OCaml toolchain needed,
-      # so a busted lecture fails the job in seconds, not minutes.
-
-      - name: Activity freshness audit
-        run: python3 tools/audit-activities.py
-
-      - name: KC-comment sweep
-        run: |
-          # KC!: (recording blocker) and KC?: (unanswered question)
-          # must not land on main; plain KC: notes only warn.
-          set +e
-          blockers=$(grep -rEn '<!--[[:space:]]*KC[!?]:' lectures/ tools/ assets/ README.md 2>/dev/null)
-          plain=$(grep -rEn '<!--[[:space:]]*KC:' lectures/ tools/ assets/ README.md 2>/dev/null)
-          set -e
-          if [ -n "$plain" ]; then
-            echo "::warning::Unswept KC: comments present:"
-            echo "$plain"
-          fi
-          if [ -n "$blockers" ]; then
-            echo "::error::Unresolved KC!:/KC?: comments (must be addressed before merge):"
-            echo "$blockers"
-            exit 1
-          fi
-          echo "No blocking KC comments."
-
-      - name: Cross-lecture link check
+      - name: Workshop link check
         run: python3 tools/check-links.py
 
       - uses: ocaml/setup-ocaml@v3
@@ -52,10 +27,10 @@ jobs:
           dune-cache: true
 
       - name: Install OCaml deps
-        run: opam install -y cmarkit fpath alcotest mdx ounit2 qcheck
+        run: opam install . --deps-only --with-test -y
 
       - name: Build
-        run: opam exec -- dune build tools/nptel-build/bin/main.exe
+        run: opam exec -- dune build tools/workshop-build/bin/main.exe
 
       - name: Run unit + integration tests
         run: opam exec -- dune runtest

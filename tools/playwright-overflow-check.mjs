@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Slide-overflow check: for each given lecture page, enter slide mode
+// Slide-overflow check: for each workshop part, enter slide mode
 // and verify every slide fits the 1280x800 reveal.js canvas.
 //
 //   node tools/playwright-overflow-check.mjs BASE_URL [page.html ...]
 //
 // BASE_URL is the directory serving _site/ contents (e.g.
 // http://localhost:8765/_site). With no page args, checks every
-// M*.html under _site/. Exits 1 if any slide overflows.
+// numbered HTML page under _site/. Exits 1 if any slide overflows.
 //
 // Pages are scanned by a pool of OVERFLOW_WORKERS parallel tabs
 // (default 6). The x-ocaml worker is left enabled: auto-run cell
@@ -23,7 +23,7 @@ const BASE = process.argv[2] || 'http://localhost:8765/_site';
 let pages = process.argv.slice(3);
 if (pages.length === 0) {
   const site = join(dirname(fileURLToPath(import.meta.url)), '..', '_site');
-  pages = readdirSync(site).filter(f => /^M\d\d-L\d\d-.*\.html$/.test(f)).sort();
+  pages = readdirSync(site).filter(f => /^\d\d-.*\.html$/.test(f)).sort();
 }
 const POOL = Math.max(1, Number(process.env.OVERFLOW_WORKERS ?? 6));
 
@@ -50,8 +50,7 @@ async function checkPage(page, url) {
       null, { timeout: 20_000 })
     .catch(() => {});
   // Images contribute zero height until decoded; an early measure
-  // silently under-reports (caught on the M12 functor-graph
-  // slides). Wait for every <img> to decode before measuring.
+  // silently under-reports. Wait for every <img> to decode before measuring.
   await page
     .evaluate(() => Promise.all(
       Array.from(document.images).map(i => i.decode().catch(() => {}))))

@@ -1,4 +1,4 @@
-// Screenshot one slide of a built lecture page.
+// Screenshot one slide of a built workshop page.
 // Usage: node tools/page-shot.mjs <page-url>#slides "<h2 title substring>" <out.png>
 // Navigates per-slide via the Reveal API with transitions off, the
 // same approach as playwright-overflow-check.mjs.

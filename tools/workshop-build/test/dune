@@ -1,0 +1,10 @@
+(test
+ (name test_unit)
+ (modules test_unit)
+ (libraries workshop_build alcotest cmarkit str))
+
+(test
+ (name test_integration)
+ (modules test_integration)
+ (libraries workshop_build cmarkit alcotest str)
+ (deps smoke.md))

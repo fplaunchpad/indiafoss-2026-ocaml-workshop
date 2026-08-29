@@ -1,8 +1,0 @@
-; Validate the OCaml code in every lecture by running it under
-; ocaml-mdx. Each `ocaml` fenced block in a .md file is compiled
-; and (where applicable) evaluated.
-(mdx
- (files
-  M01-L01-basics.md
-  M02-L02-datatypes.md
-  M03-L03-modules.md))

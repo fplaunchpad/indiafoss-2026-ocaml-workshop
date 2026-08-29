@@ -1,35 +1,25 @@
-Functional Programming with OCaml -- NPTEL MOOC course content
+Fun and Profit with OCaml — IndiaFOSS 2026 workshop
 Copyright (c) 2026 KC Sivaramakrishnan, IIT Madras
 
-The course content under `lectures/`, `_site/` (generated), `assets/css/`,
-and the README is licensed under the Creative Commons Attribution
-NonCommercial ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
-To view a copy of this license, visit:
+The workshop content under `content/`, the generated site, and the project
+documentation are licensed under the Creative Commons Attribution-
+NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0):
 
     https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-You are free to:
+The custom builder under `tools/workshop-build/` is licensed under the ISC
+License:
 
-  Share   copy and redistribute the material in any medium or format.
-  Adapt   remix, transform, and build upon the material.
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-Under the following terms:
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-  Attribution     You must give appropriate credit, provide a link to
-                  the license, and indicate if changes were made.
-  NonCommercial   You may not use the material for commercial purposes.
-  ShareAlike      If you remix, transform, or build upon the material,
-                  you must distribute your contributions under the
-                  same license as the original.
-
-The course toolchain in `tools/nptel-build/` and `tools/quiz-backend/`
-is licensed under the ISC License; see `tools/LICENSE` if present, or
-treat as ISC.
-
-The vendored x-ocaml component in `vendor/x-ocaml/` retains its
-upstream license; see `vendor/x-ocaml/LICENSE`.
-
-Third-party reference material consulted during preparation (cs3110,
-Real World OCaml, Whitington's OCaml from the Very Beginning, others)
-retains its original license. See `LICENSES.md` for the full list and
-`LICENSING_AUDIT.md` for the per-lecture audit.
+Third-party components retain their own licenses; see LICENSES.md.

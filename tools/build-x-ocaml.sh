@@ -2,17 +2,12 @@
 #
 # Rebuild assets/x-ocaml/x-ocaml.js (and the worker) from the
 # vendored x-ocaml source in vendor/x-ocaml/. This is the canonical
-# path any change in vendor/x-ocaml/src/ (e.g. KC's tooltip-not-
-# clipped fix in src/style.css) takes to land in the deployed
-# bundle. Without it, a maintainer rebuilding could pick up the
-# stale committed binary inside vendor/x-ocaml/ and lose the fix.
+# path for changes in vendor/x-ocaml/src/ to reach the deployed bundle.
 #
 # Requirements:
-# - The vendored x-ocaml submodule is checked out at the nptel
-#   branch tip (b32ca84 or later). A fresh clone gets there via:
+# - The vendored x-ocaml submodule is initialised:
 #     git submodule update --init --recursive
-# - An opam switch (typically 5.4.0 for vanilla, 5.2.0+ox for the
-#   OxCaml-extended bundle) with the x-ocaml build deps installed.
+# - An OCaml 5.4 opam switch with the x-ocaml build dependencies.
 #   Set X_OCAML_SWITCH to pick a switch; defaults to current.
 # - A working dune + js_of_ocaml in that switch.
 #
@@ -26,14 +21,6 @@
 #       ~33 MB). Most source changes don't touch the worker, so
 #       skip unless you've changed worker/no-effects/*.
 #
-# OxCaml-extended bundle (assets/x-oxcaml/x-ocaml.js):
-#   The OxCaml bundle is built on a different branch / switch and
-#   is *not* covered by this script. To rebuild it, switch the
-#   submodule to its OxCaml branch and run the upstream
-#   build_portable_js_extend.sh script under the 5.2.0+ox switch.
-#   The src/style.css fix is shared, so an OxCaml rebuild from the
-#   same source tree picks up the tooltip fix automatically.
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

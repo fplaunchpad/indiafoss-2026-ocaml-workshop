@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate cross-lecture links, heading anchors, and asset refs.
+"""Validate workshop links, heading anchors, and asset references.
 
 Heading ids on the rendered pages are assigned client-side by the
-slugify() in tools/nptel-build/lib/emit.ml:
+slugify() in tools/workshop-build/lib/emit.ml:
 
     lowercase
     -> drop every char not [a-z0-9 \\s -]   (underscores, backticks,
@@ -14,10 +14,10 @@ slugify() in tools/nptel-build/lib/emit.ml:
 
 This script recomputes those ids from the markdown sources (h2-h4
 only: that is the set the client-side anchor pass targets) and then
-checks every internal link in lectures/*.md:
+checks every internal link in content/*.md:
 
-    [text](Mnn-Lnn-slug.html#anchor)   file + anchor must resolve
-    [text](Mnn-Lnn-slug.html)          file must resolve
+    [text](02-data-types.html#anchor)  file + anchor must resolve
+    [text](02-data-types.html)         file must resolve
     [text](#anchor)                    same-file anchor
     /assets/... refs                   file must exist on disk
 
@@ -29,10 +29,10 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LECTURES = os.path.join(REPO, "lectures")
+CONTENT = os.path.join(REPO, "content")
 
 # Pages emitted by tools/build-site.sh rather than from lectures/.
-BUILT_PAGES = {"index.html", "privacy.html", "dashboard.html"}
+BUILT_PAGES = {"index.html"}
 
 
 def slugify(s: str) -> str:
@@ -76,14 +76,6 @@ def heading_ids(md_path: str) -> set:
     lines = text.split("\n")
 
     texts = []
-    # The generated title slide contributes an early h2
-    # ("Module N · Lecture M"); it participates in collision
-    # numbering, so include it.
-    week = frontmatter_field(lines, "week")
-    lec = frontmatter_field(lines, "lecture_no")
-    if week and lec:
-        texts.append(f"Module {week} Lecture {lec}")
-
     in_fence = False
     in_fm = False
     for i, line in enumerate(lines):
@@ -148,16 +140,16 @@ def internal_links(md_path: str):
 
 def main():
     md_files = sorted(
-        f for f in os.listdir(LECTURES)
-        if re.match(r"M\d\d-L\d\d-.*\.md$", f)
+        f for f in os.listdir(CONTENT)
+        if re.match(r"\d\d-.*\.md$", f)
     )
-    ids_by_page = {f: heading_ids(os.path.join(LECTURES, f)) for f in md_files}
+    ids_by_page = {f: heading_ids(os.path.join(CONTENT, f)) for f in md_files}
     pages = {f[:-3] + ".html" for f in md_files}
 
     failures = []
     for f in md_files:
-        for lineno, target, anchor in internal_links(os.path.join(LECTURES, f)):
-            where = f"lectures/{f}:{lineno}"
+        for lineno, target, anchor in internal_links(os.path.join(CONTENT, f)):
+            where = f"content/{f}:{lineno}"
             if anchor == "ASSET":
                 rel = target.split("?")[0].lstrip("/")
                 if not os.path.exists(os.path.join(REPO, rel)):
@@ -185,7 +177,7 @@ def main():
         for x in failures:
             print("  " + x)
         return 1
-    n_links = sum(1 for f in md_files for _ in internal_links(os.path.join(LECTURES, f)))
+    n_links = sum(1 for f in md_files for _ in internal_links(os.path.join(CONTENT, f)))
     print(f"check-links: OK ({len(md_files)} pages, {n_links} internal refs)")
     return 0
 

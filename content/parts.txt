@@ -1,0 +1,4 @@
+# One line per workshop part: <nn>: <title>.
+01: OCaml Basics
+02: Data Types and Pattern Matching
+03: Modules and Abstraction

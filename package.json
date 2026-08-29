@@ -1,14 +1,14 @@
 {
-  "name": "ocaml_nptel",
+  "name": "indiafoss-2026-ocaml-workshop",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tools/playwright-check.mjs"
   },
-  "keywords": [],
-  "author": "",
+  "private": true,
+  "keywords": ["ocaml", "indiafoss", "workshop"],
+  "author": "FP Launchpad, IIT Madras",
   "license": "ISC",
-  "description": "",
+  "description": "Interactive OCaml workshop for IndiaFOSS 2026",
   "devDependencies": {
     "playwright": "1.60.0"
   }

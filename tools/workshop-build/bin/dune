@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries workshop_build cmarkit fpath unix))

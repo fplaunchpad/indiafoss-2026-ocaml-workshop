@@ -1,4 +1,0 @@
-(library
- (name morse)
- (instrumentation
-  (backend bisect_ppx)))

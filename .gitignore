@@ -3,82 +3,12 @@ _site/
 *.install
 .merlin
 
-# VM-image build scratch: pinned third-party inputs (v86 clone,
-# prebuilt engine) and heavy build outputs (rootfs chunk store,
-# boot snapshots). Sources live in tools/vm-image/; regenerate the
-# scratch with tools/vm-image/setup-scratch.sh.
-_vm-prototype/
-
-# Video pipeline: heavy artifacts are rebuildable from the playlist.
-# We commit only transcript.md (the readable view) and
-# slides_with_narration.json (the small alignment file). The raw
-# transcript.json with word-level timestamps is large and regenerable
-# with mlx_whisper; do not commit.
-_references/_video/*/video.mp4
-_references/_video/*/audio.wav
-_references/_video/*/audio.json
-_references/_video/*/video.*.mp4
-_references/_video/*/*.part
-_references/_video/*/*.ytdl
-_references/_video/*/info.json
-_references/_video/*/*.log
-_references/_video/*/slides/
-_references/_video/*/transcript.json
-_references/_video/.queue.tsv
-
-# CS3100 source sites: cloned for reference, not part of this course.
-# Re-clone from GitHub if needed; do not vendor here.
-_references/cs3100_m20/
-_references/cs3100_m25/
-
-# reveal.js: we only use the dist/ subdir. The plugins are not loaded.
-assets/reveal/plugin/
-
-# x-oxcaml bundle (~65 MB after dropping portable.js and swapping to
-# the no-effects worker; portable.js's await/capsule/portable libs
-# aren't used by M11, which is mode annotations only; the no-effects
-# worker saves ~15 MB over +effects since M11 has no Domain.Safe.spawn
-# or effect-handler examples). The 60 MB worker exceeds GitHub's
-# 50 MB soft warning but is under the 100 MB push limit and accepted
-# by GH Pages; committed directly to assets/x-oxcaml/ rather than
-# git-LFS'd, matching the deployment of KC's other OxCaml blog posts.
-
-# OS junk
-.DS_Store
-
-# Node artifacts (if any tooling pulls them)
+# Local dependencies and browser-test output
 node_modules/
-
-# Playwright MCP scratch directory: snapshots and console logs from
-# the browser tool. Re-created on every run; do not commit.
 .playwright-mcp/
 
-# Reference textbooks: cloned/downloaded for source material, not vendored
-# into the repo. Re-clone or re-download if needed.
-_references/textbooks/
+# OS and editor files
+.DS_Store
 
-# Reference papers (LaTeX sources, PDFs, supporting assets): consulted
-# during authoring, not part of the course content.
-_references/profiling_a_programming_language/
-_references/PLDI18-Memory/
-_references/cs6868_s26/
-_references/mirage_iitm_jan_2025.pdf
-
-# Stray slide screenshots parked under _references/: referenced by no
-# lecture, kept local-only. (Some _references files ARE tracked, e.g.
-# the MOOC proposal PDFs and _video transcripts, so we enumerate
-# instead of ignoring the whole directory.)
-_references/*.png
-
-# Internal sanity-check notes. The course's published licensing posture
-# is in LICENSE and LICENSES.md; LICENSING_AUDIT.md is the private
-# working file with per-lecture verdicts, kept local.
-LICENSING_AUDIT.md
-
-# Editorial review notes produced by per-module sweep agents. Working
-# scratch for polish decisions, not part of the course content.
-_reviews/
-
-# Local-only working handoff notes
+# Local working notes
 HANDOFF-*.md
-_references/m12-slide-images/

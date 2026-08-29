@@ -1,3 +1,0 @@
-; Keep the baked m12 unikernel sources out of the repo's dune
-; workspace (same convention as ../dune for image/).
-(data_only_dirs projects)

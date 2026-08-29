@@ -33,12 +33,6 @@ async function main() {
   const cellCount = await page.evaluate(() => document.querySelectorAll('x-ocaml').length);
   console.log('cells upgraded:', cellCount);
 
-  // The vm-terminal placeholder must render without booting anything
-  // (click-to-boot: zero VM downloads until the button is pressed).
-  const vmPlaceholder = await page.evaluate(() =>
-    !!document.querySelector('.vm-terminal button.vm-start'));
-  console.log('vm-terminal placeholder rendered:', vmPlaceholder);
-
   // --- chapter mode: chapter content should be visible ---
   const chapterVisible = await page.evaluate(() =>
     document.body.classList.contains('mode-chapter')
@@ -123,12 +117,11 @@ async function main() {
   await browser.close();
 
   // Assert. Logging alone let a broken Run-all / slide mode pass the
-  // pre-recording gate; collect expectations and fail on any miss.
+  // smoke test; collect expectations and fail on any miss.
   const consoleErrors = events.filter(e =>
     e.startsWith('console.error') || e.startsWith('pageerror'));
   const expectations = [
     [cellCount > 0, `cells upgraded (${cellCount})`],
-    [vmPlaceholder, 'vm-terminal placeholder rendered'],
     [chapterVisible, 'chapter visible in chapter mode'],
     [slideHidden, 'chapter hidden in slide mode'],
     [slidesInReveal > 0, `slides inside reveal wrapper (${slidesInReveal})`],

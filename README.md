@@ -1,59 +1,52 @@
-Source repository for [Fun and Profit with
-OCaml](https://fplaunchpad.org/indiafoss-2026-ocaml-workshop/), a workshop being
-offered at IndiaFOSS 2026.
+# Fun and Profit with OCaml
 
-## Build & preview locally
+Source for the interactive beginner workshop offered at IndiaFOSS 2026.
+The published workshop is at
+<https://fplaunchpad.org/indiafoss-2026-ocaml-workshop/>.
 
-If you wish to adapt this content and test it locally before deployment:
+The workshop has three parts:
+
+1. OCaml basics
+2. Data types and pattern matching
+3. Modules and abstraction
+
+Every OCaml block is editable and runnable in the browser. Each page can
+also switch into a reveal.js slide deck for the live session.
+
+## Build locally
 
 ```sh
-opam switch create . 5.4.0   # only the first time
-opam install -y cmarkit fpath alcotest mdx
+opam switch create . 5.4.0
+opam install . --deps-only --with-test
+npm install
 
-# build the toolchain + render every lecture into _site/
 tools/build-site.sh
-
-# preview
 python3 -m http.server 8765
-# open http://localhost:8765/_site/M01-L01-course-intro.html
-# or http://localhost:8765/_site/ for the landing page
 ```
 
-## Using GitHub for hosting
+Open <http://localhost:8765/_site/>.
 
-`.github/workflows/pages.yml` deploys `_site/` to GitHub Pages on
-    every push to the branch specified in `branches`. After the first push:
+## Test
 
-1. On GitHub: **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Wait for the first workflow run to finish; the site URL appears
-   at the top of the Pages settings page.
+```sh
+tools/run-tests.sh
+```
 
-The workflow does not build `vendor/x-ocaml`; it uses the prebuilt
-bundles already committed under `assets/x-ocaml/`.
+This validates the Markdown code blocks, tests the static-site builder,
+renders the site, and runs the browser smoke checks.
 
+## Project layout
 
-## Learn more about OCaml
+- `content/` — the three workshop parts and their navigation labels
+- `tools/workshop-build/` — Markdown-to-HTML builder
+- `assets/x-ocaml/` — prebuilt in-browser OCaml runtime
+- `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
+- `tools/build-site.sh` — complete site build
 
-- The OCaml language home page: <https://ocaml.org/>. Install
-  instructions, the language manual, and the ecosystem of libraries
-  and tools.
-- [Functional Programming with OCaml](https://github.com/fplaunchpad/ocaml_nptel), a 12-week NPTEL course
-- [Academic research using the OCaml language](https://ocaml.org/academic-users)
-- Tools that comprise the [OCaml platform](https://ocaml.org/platform)
+## Sources and licensing
 
-
-## Acknowledgements
-
-
-- [Functional Programming in OCaml" course materials for NPTEL](https://github.com/fplaunchpad/ocaml_nptel)
-- [`art-w/x-ocaml`](https://github.com/art-w/x-ocaml) by Arthur
-  Wendling: the in-browser OCaml WebComponent that powers every
-  runnable cell on the site.
-- [Cornell CS3110 textbook](https://cs3110.github.io/textbook/)
--[Real World OCaml v2](https://dev.realworldocaml.org/)
-
-## License
-
-Course material distributed under **CC-BY-NC-SA** per the NPTEL
-faculty guidelines.
+The workshop adapts material from KC Sivaramakrishnan's
+[OCaml tutorial for Abstraction 2019](https://github.com/kayceesrk/ocaml-tutorial/tree/master)
+and reuses parts of the static-site infrastructure originally developed for
+[Functional Programming with OCaml](https://github.com/fplaunchpad/ocaml_nptel).
+See [LICENSE](LICENSE) and [LICENSES.md](LICENSES.md) for details.

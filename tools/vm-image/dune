@@ -1,4 +1,0 @@
-; The VM image sources under image/ include sample dune projects
-; that are baked into the in-browser VM. They are not part of this
-; workspace: keep dune from interpreting their dune files.
-(data_only_dirs image)

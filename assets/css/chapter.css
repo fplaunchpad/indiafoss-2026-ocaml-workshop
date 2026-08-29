@@ -58,7 +58,7 @@ body.mode-slides .activity-scratch { display: none; }
 /* Toggle visibility by mode. */
 body.mode-chapter .reveal { display: none; }
 body.mode-slides  .chapter { display: none; }
-body.mode-slides  .lecture-meta-footer { display: none; }
+body.mode-slides  .part-meta-footer { display: none; }
 
 /* Opening title slides are slide-mode only. In chapter mode the
    page-header bar and the lecture's own H1 already carry the
@@ -89,7 +89,7 @@ body.mode-chapter section:has(.title-slide-inner) { display: none; }
      viewport horizontally. */
   flex-wrap: wrap;
   /* Uniform spacing between all header items: the same 0.4rem used
-     by the inner cell-controls. The lecture-title has [flex: 1] so
+     by the inner cell-controls. The part-title has [flex: 1] so
      it absorbs the wide gap between the left cluster (sidebar
      toggle + home + meta) and the right cluster (cell controls +
      mode toggle); other adjacent items stay at 0.4rem. */
@@ -99,14 +99,14 @@ body.mode-chapter section:has(.title-slide-inner) { display: none; }
      instead of painting its Run over the banner. */
   z-index: 1000;
 }
-.lecture-meta {
+.part-meta {
   color: var(--muted);
   font-size: 0.85rem;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.lecture-title {
+.part-title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
@@ -218,12 +218,12 @@ body.mode-slides  .when-chapter { display: none; }
   color: var(--muted);
   margin-right: 0.3em;
 }
-.sidebar-lectures {
+.sidebar-parts {
   list-style: none;
   padding: 0;
   margin: 0.2rem 0 0.4rem 1.4rem;
 }
-.sidebar-lectures li a {
+.sidebar-parts li a {
   display: block;
   padding: 0.2rem 0.5rem;
   border-radius: 3px;
@@ -231,13 +231,13 @@ body.mode-slides  .when-chapter { display: none; }
   color: var(--fg);
   font-weight: 400;
 }
-.sidebar-lectures li a:hover { background: var(--code-bg); }
-.sidebar-lectures li.current > a {
+.sidebar-parts li a:hover { background: var(--code-bg); }
+.sidebar-parts li.current > a {
   background: #e8f0e6;
   color: var(--accent);
   font-weight: 600;
 }
-.sidebar-lectures .lec-no {
+.sidebar-parts .part-no {
   display: inline-block;
   width: 2.4em;
   color: var(--muted);
@@ -251,7 +251,7 @@ body.mode-slides  .when-chapter { display: none; }
 @media (min-width: 900px) {
   body.mode-chapter:not(.sidebar-hidden) .chapter,
   body.mode-chapter:not(.sidebar-hidden) .prev-next,
-  body.mode-chapter:not(.sidebar-hidden) .lecture-meta-footer {
+  body.mode-chapter:not(.sidebar-hidden) .part-meta-footer {
     margin-left: calc(var(--sidebar-width) + 2.5rem);
     margin-right: 1.5rem;
   }
@@ -279,7 +279,7 @@ body.sidebar-hidden .sidebar { display: none; }
 .sidebar-collapse:hover { background: var(--code-bg); }
 
 /* Home / landing-page link in the header. Sits next to the sidebar
-   toggle so the reader can always escape back to the course index. */
+   toggle so the reader can always escape back to the workshop index. */
 .home-link {
   display: inline-flex;
   align-items: center;
@@ -345,12 +345,9 @@ body.mode-slides .home-link { opacity: 0.6; }
    1. Touch targets. The header buttons are ~32x34 px on desktop;
       that is under the Apple HIG 44 px and Material 48 px
       minimums, so on touch devices the buttons are hard to hit.
-   2. The lecture title ellipses aggressively to "Course..." once
+   2. The page title ellipses aggressively once
       the cell-controls cluster wraps; at narrow widths the title
       should drop to its own row.
-   3. The privacy banner sits flush against the right edge at
-      ~390 px viewport. Span it full-width with safe margins
-      instead, so it has dismiss buttons inside the viewport.
 
    Scoped to (a) coarse pointers (phones, tablets), and (b) narrow
    viewports (<= 600 px) so desktop browsers at narrow widths also
@@ -365,11 +362,6 @@ body.mode-slides .home-link { opacity: 0.6; }
     min-width: 44px;
     padding-left: 0.7rem;
     padding-right: 0.7rem;
-  }
-  .privacy-banner button {
-    min-height: 44px;
-    min-width: 64px;
-    padding: 0.5rem 1rem;
   }
 }
 
@@ -388,7 +380,7 @@ body.mode-slides .home-link { opacity: 0.6; }
   /* Stack: lecture title gets its own row below the button cluster.
      The page-header flex-wrap (set in the earlier mobile pass) lets
      this happen; we just force the title to take the full row. */
-  .lecture-title {
+  .part-title {
     flex-basis: 100%;
     order: 99;            /* push title below the button cluster */
     text-overflow: clip;  /* no need to ellipsis once it has the row */
@@ -396,14 +388,6 @@ body.mode-slides .home-link { opacity: 0.6; }
     font-size: 1rem;
   }
 
-  /* Privacy banner: span the bottom of the viewport with comfortable
-     left/right margins. Drops the fixed 360 px max-width that
-     pushed it flush against narrow screens' right edges. */
-  .privacy-banner {
-    left: 0.75rem;
-    right: 0.75rem;
-    max-width: none;
-  }
 }
 
 .chapter h1, .chapter h2, .chapter h3 {
@@ -436,56 +420,6 @@ body.mode-slides .home-link { opacity: 0.6; }
 .chapter h4:hover .permalink,
 .chapter .permalink:focus { opacity: 1; }
 .chapter .permalink:hover { color: var(--accent); }
-
-/* ---- Privacy banner (first-visit notice) ---- */
-
-.privacy-banner {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  max-width: 360px;
-  padding: 0.8rem 1rem;
-  background: #fff;
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--accent);
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  z-index: 1500;
-}
-.privacy-banner p {
-  margin: 0 0 0.6rem;
-  color: var(--fg);
-}
-.privacy-banner a {
-  color: var(--accent);
-}
-.privacy-banner .privacy-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-.privacy-banner button {
-  padding: 0.35rem 0.9rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font: inherit;
-}
-.privacy-banner .privacy-allow {
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #fff;
-}
-.privacy-banner .privacy-allow:hover { filter: brightness(1.1); }
-.privacy-banner .privacy-decline {
-  border: 1px solid var(--rule);
-  background: transparent;
-  color: var(--fg);
-}
-.privacy-banner .privacy-decline:hover { background: var(--code-bg); }
-body.mode-slides .privacy-banner { display: none; }
 
 .chapter p { margin: 0.9rem 0; }
 .chapter pre, .chapter code { font-family: "JetBrains Mono", "Fira Code", Menlo, ui-monospace, monospace; }
@@ -543,7 +477,7 @@ body.mode-chapter aside.notes {
   display: none;
 }
 
-.lecture-meta-footer {
+.part-meta-footer {
   max-width: var(--width);
   margin: 3rem auto 2rem;
   padding: 1rem;
@@ -553,7 +487,7 @@ body.mode-chapter aside.notes {
 }
 .meta-line { margin: 0.3rem 0; }
 .meta-label { font-weight: 600; color: var(--fg); margin-right: 0.4rem; }
-.lecture-meta-footer ul { margin: 0.3rem 0 0 1.5rem; padding: 0; }
+.part-meta-footer ul { margin: 0.3rem 0 0 1.5rem; padding: 0; }
 
 /* x-ocaml cells fit the chapter width and look like code. */
 x-ocaml {
@@ -739,7 +673,7 @@ details.solution > *:last-child { margin-bottom: 0; }
 
 /* ---- On-this-page TOC (right-hand, chapter mode only) ----
    Built client-side from the prose section headings (see buildToc in
-   the runtime script). Complements the left course-outline sidebar:
+   the runtime script). Complements the left workshop-outline sidebar:
    left answers "which lecture", this answers "where in this lecture".
    Shown only on wide screens; never in slide mode or print/PDF. */
 

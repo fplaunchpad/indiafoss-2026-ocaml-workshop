@@ -118,7 +118,7 @@ body.mode-slides .reveal .slides section h3 {
   font-size: 2rem;
 }
 
-/* Title slide. Carries course name, lecture title, Module/Lecture
+/* Title slide. Carries workshop name, part title, and part number
    label, and instructor. Authored in markdown as a `:::slide` block
    wrapping a `<div class="title-slide-inner">`; reveal.js sets
    `style="display: block"` inline on every visible section, so we
@@ -141,13 +141,13 @@ body.mode-slides .reveal .slides .title-slide-inner {
   align-items: flex-start;
   justify-content: center;
 }
-body.mode-slides .reveal .slides .title-slide-course {
+body.mode-slides .reveal .slides .title-slide-workshop {
   font-size: 1.6rem;
   color: var(--muted, #555);
   margin: 0 0 1rem 0;
   letter-spacing: 0.02em;
 }
-body.mode-slides .reveal .slides .title-slide-lecture {
+body.mode-slides .reveal .slides .title-slide-part {
   font-size: 3.2rem;
   font-weight: 700;
   margin: 0 0 0.8rem 0;
@@ -259,8 +259,8 @@ body.mode-slides .page-header {
   border-bottom: none;
   padding: 0.4rem 1rem;
 }
-body.mode-slides .lecture-meta,
-body.mode-slides .lecture-title {
+body.mode-slides .part-meta,
+body.mode-slides .part-title {
   opacity: 0.6;
 }
 

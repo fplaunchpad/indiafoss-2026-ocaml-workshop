@@ -1,4 +1,0 @@
-(library
- (name streak)
- (instrumentation
-  (backend bisect_ppx)))

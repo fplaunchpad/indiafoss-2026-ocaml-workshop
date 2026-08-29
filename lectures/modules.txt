@@ -1,4 +1,0 @@
-# One line per module: <Mnn>: <title>. Matches PLAN.md.
-M01: OCaml Basics
-M02: Data Types
-M03: Modularity
