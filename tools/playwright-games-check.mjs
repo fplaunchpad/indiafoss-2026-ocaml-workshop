@@ -19,7 +19,7 @@ try {
   const gameLinks = await landing.locator('.games a').evaluateAll(links =>
     links.map(link => link.getAttribute('href')));
   if (!landingText.includes('Final 45-minute game lab')
-      || !landingText.includes('do not refresh')
+      || !landingText.includes('saved locally in this browser')
       || !gameLinks.includes('games/life_partial_list.html')
       || !gameLinks.includes('games/tictactoe_partial_list.html')) {
     throw new Error('landing page is missing the game-lab guidance or links');
@@ -76,7 +76,7 @@ try {
       [credit?.includes('Smayan Agarwal'), 'contributor credit is missing'],
       [home === '../index.html', `workshop-home link is ${home}`],
       [pageText.includes('45-minute lab:'), 'game-lab scope is missing'],
-      [pageText.includes('not saved across reloads'), 'reload warning is missing'],
+      [pageText.includes('saved locally in this browser'), 'local-save guidance is missing'],
       [refresherLinks.includes('../02-data-types.html#pattern-matching'),
         'pattern-matching refresher link is missing'],
       [refresherLinks.includes('../02-data-types.html#matching-lists'),
@@ -86,7 +86,34 @@ try {
     ].filter(([ok]) => !ok).map(([, message]) => message);
 
     if (failures.length) throw new Error(`${name}:\n${failures.join('\n')}`);
-    console.log(`${name}: ${cellCount} cells upgraded; game panel rendered`);
+
+    const marker = `(* saved-work-check-${path.replace(/\W/g, '-')} *)`;
+    const firstStudentEditor = page.locator('.quiz-code[data-quiz-id]').first()
+      .locator('x-ocaml:not([data-quiz-test]):not([run-on="peek"])').last()
+      .locator('.cm-content');
+    await firstStudentEditor.click();
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type(marker);
+    await page.waitForFunction(() =>
+      document.querySelector('[data-save-status]')?.dataset.state === 'saved');
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => {
+      const firstQuiz = document.querySelector('.quiz-code[data-quiz-id]');
+      const editable = Array.from(firstQuiz?.querySelectorAll('x-ocaml') || [])
+        .filter(cell => !cell.hasAttribute('data-quiz-test') && cell.getAttribute('run-on') !== 'peek');
+      return editable.at(-1)?.shadowRoot?.querySelector('.cm-content');
+    }, null, { timeout: 90_000 });
+    const restored = await page.locator('.quiz-code[data-quiz-id]').first()
+      .locator('x-ocaml:not([data-quiz-test]):not([run-on="peek"])').last()
+      .locator('.cm-content').innerText();
+    if (!restored.includes(marker)) throw new Error(`${name}: saved work did not survive reload`);
+
+    await page.evaluate(() => {
+      localStorage.removeItem(`indiafoss-ocaml-game:${document.body.dataset.gameId}`);
+    });
+    console.log(`${name}: ${cellCount} cells upgraded; game rendered; work survived reload`);
     await page.close();
   }
 } finally {

@@ -26,11 +26,14 @@ opam switch create . 5.4.0
 opam install . --deps-only --with-test
 npm install
 
-tools/build-site.sh
-python3 -m http.server 8765
+tools/preview-site.sh
 ```
 
 Open <http://localhost:8765/_site/>.
+
+Use `tools/preview-site.sh --test` to run every check before serving,
+`--open` to open the browser automatically, or `--port 9000` to choose
+a different port.
 
 ## Test
 
@@ -49,6 +52,7 @@ renders the site, and runs the browser smoke checks.
 - `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
 - `games/` — standalone interactive practice exercises
 - `tools/build-site.sh` — complete site build
+- `tools/preview-site.sh` — build and serve a local preview
 
 ## Sources and licensing
 

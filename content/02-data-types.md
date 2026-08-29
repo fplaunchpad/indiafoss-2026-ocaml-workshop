@@ -2,7 +2,7 @@
 title: "Data Types and Pattern Matching"
 part: 2
 duration_target_min: 50
-concepts: [type aliases, records, mutability, variants, pattern matching, parameterised types, recursive types, lists]
+concepts: [variants, records, pattern matching, parameterised types, recursive types, lists, mutability, type aliases]
 keywords: [OCaml, algebraic data types, records, option, exhaustive matching, recursion]
 reading:
   - title: "The OCaml manual, Data types section"
@@ -29,48 +29,42 @@ OCaml has a concise and expressive system for creating new data
 types. Pattern matching provides a natural way to inspect and
 deconstruct values of those types.
 
-## Type aliases
+## Variants
 
-OCaml allows you to define aliases for existing types using the
-`type` keyword:
+### Variant types
+
+Variants represent data that can be in one of a fixed number of
+forms. We will use a small `colour` type to see why this works so
+well with pattern matching:
 
 :::slide
 
-## Type aliases
+## Variant types
 
 ```ocaml
-type int_pair = int * int
+type colour =
+  | Red
+  | Green
+  | Blue
 
-let id (x : int_pair) = x
+let red = Red
 ```
 
-- `type NAME = ...` gives an existing type a second name.
-- An alias is the same type, not a new one, so `int_pair` and
-  `int * int` are interchangeable.
-- `:` constrains an expression or a binding to a type.
+- A variant value is in exactly one of a fixed set of forms.
+- Each form is named by a constructor, written with a capital
+  letter.
+- The type lists every constructor, which is what lets the
+  compiler check a `match` for completeness.
 
 :::
 
 ```ocaml
-type int_pair = int * int
-```
+type colour =
+  | Red
+  | Green
+  | Blue
 
-The above defines a type `int_pair` which is an alias for the pair
-of ints type (`int * int`).
-
-You can constrain the type of an expression using the `:` operator.
-Here we create an identity function which is constrained to only
-work on pairs of ints:
-
-```ocaml
-let id x = (x : int_pair)
-```
-
-You can also constrain the type of a variable binding, so our `id`
-function could also be written as:
-
-```ocaml
-let id (x : int_pair) = x
+let red = Red
 ```
 
 ## Records
@@ -180,194 +174,7 @@ with
 let mk_point x y z = { x; y; z }
 ```
 
-## Mutability
-
-OCaml supports mutability where it is useful. One mechanism is a
-mutable record field. Let us make a mutable point data type.
-
-```ocaml
-type mpoint = {mutable x : int; mutable y : int; mutable z: int}
-```
-
-Notice that the type says that the fields are `mutable`. Just like
-the point data type defined previously, you can create a value of
-`mpoint` type and read it.
-
-```ocaml
-let morigin = {x=0;y=0;z=0}
-
-let p = {morigin with z = 10}
-
-let p_z = p.z
-```
-
-However, unlike the immutable record fields, the mutable fields can
-be updated.
-
-:::slide
-
-## Mutable record fields
-
-```ocaml
-let () = p.z <- 20
-
-let p_z = p.z
-```
-
-- Unlike immutable record fields, mutable fields can be updated.
-- Updates use the `<-` operator.
-
-:::
-
-:::slide
-
-:::quiz mcq id=data-types-q1
-`origin` is an *immutable* `point`, and `morigin` is a *mutable*
-`mpoint`. What is the key difference between
-`let p = { origin with z = 10 }` and `let () = p.z <- 20` (for `p`
-a `mpoint`)?
-
-- [ ] There is no difference; both mutate the field in place.
-- [x] `{ origin with z = 10 }` allocates a brand-new record,
-      leaving `origin` untouched; `p.z <- 20` mutates the existing
-      `p` in place and returns `unit`.
-- [ ] `{ ... with ... }` only works on mutable records.
-- [ ] `<-` only works on immutable records.
-
-**Why:** functional update (`{ r with field = v }`) is available
-on any record and always produces a fresh value, since ordinary
-fields cannot be changed after construction. The `<-` assignment
-operator only type-checks against fields explicitly declared
-`mutable`, and it changes the record that already exists rather
-than making a new one.
-:::
-
-:::
-
-### References
-
-It is sometimes useful to create a single mutable value. OCaml
-provides reference cells for this purpose.
-
-:::slide
-
-## References
-
-```ocaml
-let counter = ref 0
-
-let () = counter := !counter + 1
-
-let seen = !counter
-```
-
-- `ref v` creates a single mutable cell holding `v`.
-- Read it with `!` and update it with `:=`.
-- A `ref` is really a record with one mutable field.
-
-:::
-
-```ocaml
-let x = ref 0
-```
-
-`x` is a reference cell which holds a value of type integer and
-its current value is 0. Reference cells can be read using `!` and
-updated using `:=`.
-
-```ocaml
-let () = x := !x + 1
-
-let v = !x
-```
-
-:::slide
-
-
-:::quiz code id=data-types-q2
-Implement `swap : int ref -> int ref -> unit` that swaps the
-values held by two reference cells.
-
-```ocaml
-let swap x y = failwith "not implemented"
-```
-
-```ocaml skip
-let check b m = if not b then failwith m
-let () =
-  let x = ref 10 in
-  let y = ref 20 in
-  swap x y;
-  check ((20, 10) = (!x, !y)) "swap 10 20";
-  let a = ref 1 in
-  let b = ref 1 in
-  swap a b;
-  check ((1, 1) = (!a, !b)) "swap equal values";
-  print_endline "all tests passed"
-```
-:::
-
-:::
-
-:::slide
-
-:::solution
-
-Save `!x` in a temporary before overwriting `x`, otherwise the
-second assignment reads the already-updated value.
-
-```ocaml
-let swap x y =
-  let tmp = !x in
-  x := !y;
-  y := tmp
-```
-
-:::
-
-:::
-
-## Variants
-
-### Variant types
-
-Variants in OCaml represent data which can be in one of a number
-of forms. A very simple example is a type representing one of
-three colours:
-
-:::slide
-
-## Variant types
-
-```ocaml
-type colour =
-  | Red
-  | Green
-  | Blue
-
-let red = Red
-```
-
-- A variant value is in exactly one of a fixed set of forms.
-- Each form is named by a constructor, written with a capital
-  letter.
-- The type lists every constructor, which is what lets the
-  compiler check a `match` for completeness.
-
-:::
-
-```ocaml
-type colour =
-  | Red
-  | Green
-  | Blue
-```
-
-We can create a `colour` using one of its constructors:
-
-```ocaml
-let red = Red
-```
+## Variants with data
 
 ### Constructor arguments
 
@@ -672,7 +479,7 @@ Warning 11 [redundant-case]: this match case is unused.
 
 :::slide
 
-:::quiz mcq id=data-types-q3
+:::quiz mcq id=data-types-q1
 Suppose `print_t_` (defined earlier) omits the `Colour Green` case
 of the `t` variant. What does OCaml do?
 
@@ -958,7 +765,7 @@ let s = sum l
 :::slide
 
 
-:::quiz code id=data-types-q4
+:::quiz code id=data-types-q2
 Write `min_list : int list -> int option` to compute the minimum
 element of an integer list. Return `None` for the empty list, and
 `Some e` when the minimum element is `e`.
@@ -1014,7 +821,7 @@ let min_list l = min_list_helper None l
 :::slide
 
 
-:::quiz code id=data-types-q5
+:::quiz code id=data-types-q3
 Write `postfix : 'a binary_tree -> 'a list` that returns the
 elements of a binary tree in postfix order (left subtree, then
 right subtree, then the node itself). Use the list append operator
@@ -1060,7 +867,7 @@ let rec postfix t =
 :::slide
 
 
-:::quiz code id=data-types-q6
+:::quiz code id=data-types-q4
 Write `rev_list : 'a list -> 'a list` that reverses a list. Use the
 list append operator `@` (an `O(n)` accumulator-based version is a
 nice follow-up once you've seen this one work).
@@ -1093,5 +900,70 @@ let rec rev_list l =
 ```
 
 :::
+
+:::
+
+## Optional: mutation and references
+
+Most of the workshop uses immutable values. OCaml also supports
+mutation when changing state in place is the clearer tool.
+
+:::slide
+
+## Optional: mutation
+
+```ocaml
+type mpoint = { mutable x : int; mutable y : int; mutable z : int }
+
+let p = { x = 0; y = 0; z = 10 }
+
+let () = p.z <- 20
+```
+
+- A field must be declared `mutable` before it can be assigned.
+- `<-` updates the existing record; `{ p with z = 20 }` instead
+  makes a new record.
+
+:::
+
+Reference cells provide one mutable value without defining a new
+record type:
+
+:::slide
+
+## Optional: references
+
+```ocaml
+let counter = ref 0
+
+let () = counter := !counter + 1
+
+let seen = !counter
+```
+
+- `ref v` creates a mutable cell holding `v`.
+- Read it with `!` and update it with `:=`.
+- A reference is a record with one mutable field.
+
+:::
+
+## Optional: type aliases
+
+An alias gives an existing type another name. It does not create a
+distinct type:
+
+:::slide
+
+## Optional: type aliases
+
+```ocaml
+type int_pair = int * int
+
+let id (x : int_pair) = x
+```
+
+- `type NAME = ...` gives an existing type a second name.
+- `int_pair` and `int * int` remain interchangeable.
+- `:` constrains an expression or binding to a type.
 
 :::

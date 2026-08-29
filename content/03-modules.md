@@ -141,15 +141,28 @@ This allows us to hide some of the details of the structure:
 
 :::slide
 
+## A named signature
+
+```ocaml
+module type INT_SET = sig
+  type t
+  val empty : t
+  val mem : int -> t -> bool
+  val add : int -> t -> t
+end
+```
+
+- A named module type describes a public interface.
+- `type t` exposes the type's name while hiding its representation.
+
+:::
+
+:::slide
+
 ## Signature ascription
 
 ```ocaml
-module IntSet : sig
-  type t
-  val empty: t
-  val mem: int -> t -> bool
-  val add: int -> t -> t
-end = struct
+module IntSet : INT_SET = struct
   type t = int list
 
   let empty = []
@@ -166,6 +179,7 @@ end
 
 - A structure can be given a signature that publishes less than
   it actually contains.
+- Another implementation can promise the same `INT_SET` interface.
 
 :::
 
@@ -185,7 +199,7 @@ end
 
 :::slide
 
-:::quiz mcq id=modules-q2
+:::quiz mcq id=modules-q1
 Why does restricting `IntSet`'s signature to omit the definition
 of `t` matter?
 
@@ -251,33 +265,46 @@ Error: This expression has type IntSet.t
        but an expression was expected of type int list
 ```
 
+### Live demo: change the representation
+
+The useful part of abstraction is not the error by itself—it is
+what the error makes possible. In the live session:
+
+1. Run the `IntSet` implementation and its client.
+2. Show that `4 :: s` is rejected.
+3. Replace only the implementation with the version below, then
+   rerun the unchanged client.
+
 :::slide
 
-:::quiz mcq id=modules-q3
-Why does `4 :: s` fail to type-check here, even though `IntSet.t`
-is implemented as `int list` under the hood?
+## Live demo: swap the implementation
 
-- [x] Outside the module, `IntSet.t` is an opaque type; the
-      signature does not say it equals `int list`, so the type
-      checker treats the two as unrelated.
-- [ ] `::` only works inside `struct ... end` blocks.
-- [ ] `4` should have been written `4.0`.
-- [ ] `IntSet` is a functor, so its values can't be consed onto a
-      list.
+Keep `INT_SET` and the client unchanged. Replace only `IntSet`:
 
-**Why:** type-checking only ever looks at the *signature* a
-module was given, never its hidden implementation. Since the
-signature declares `type t` with no equation, `IntSet.t` and
-`int list` are, as far as the compiler is concerned, two distinct
-types, so `::` (which needs both sides to agree) is rejected —
-exactly the protection abstraction is meant to provide.
+```ocaml skip
+module IntSet : INT_SET = struct
+  type t = Set of int list
+
+  let empty = Set []
+
+  let mem i (Set xs) = List.mem i xs
+
+  let add i (Set xs as s) =
+    if List.mem i xs then s else Set (i :: xs)
+end
+```
+
+Then rerun:
+
+```ocaml skip
+let s = IntSet.add 6 (IntSet.add 5 IntSet.empty)
+let b = IntSet.mem 6 s
+```
+
+The client still works because it depended on `INT_SET`, not on
+the hidden list representation.
+
 :::
-
-:::
-
-Later we can switch to a more efficient implementation using trees
-safe in the knowledge that this will not break existing code using
-`IntSet`.
 
 Types with hidden definitions, like `t` above, are called
 abstract types. OCaml's support for abstraction is one of its most
@@ -303,27 +330,5 @@ which describes the signature of the list interface.
   private to `foo.ml`.
 - The standard library works this way: `list.ml` is the
   implementation, `list.mli` the interface you read.
-
-:::
-
-:::slide
-
-:::quiz mcq id=modules-q1
-If a source file is named `math_utils.ml`, what module name does
-OCaml automatically give it?
-
-- [x] `Math_utils` — OCaml capitalises just the first letter of
-      the file's base name; module names must start with a
-      capital letter.
-- [ ] `MathUtils` — camelCase, as in many other languages.
-- [ ] `math_utils` — exactly the file's base name.
-- [ ] `Math_Utils` — every underscore-separated word gets
-      capitalised.
-
-**Why:** OCaml derives a file's module name by capitalising only
-the first letter; the rest of the name (including underscores) is
-left unchanged. So `math_utils.ml` becomes module `Math_utils`,
-`list.ml` becomes `List`, and `foo.ml` becomes `Foo`.
-:::
 
 :::

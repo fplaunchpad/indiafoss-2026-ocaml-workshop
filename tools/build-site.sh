@@ -91,7 +91,7 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       </span></a></li>
       <li><a href="02-data-types.html"><span class="part-no">Part 2</span><span>
         <span class="part-title">Data Types</span>
-        <span class="part-summary">Records, variants, and pattern matching</span>
+        <span class="part-summary">Variants, pattern matching, and records</span>
       </span></a></li>
       <li><a href="03-modules.html"><span class="part-no">Part 3</span><span>
         <span class="part-title">Modules</span>
@@ -103,8 +103,8 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       <p>Choose one game. Tic-Tac-Toe is the recommended starting point;
         Game of Life is the challenge path. Complete the numbered problems
         first—the stretch problems are optional.</p>
-      <p><strong>Open your chosen game during the briefing and do not refresh
-        the page: edits are not saved across reloads.</strong></p>
+      <p><strong>Open your chosen game during the briefing. Your answers are
+        saved locally in this browser as you type.</strong></p>
       <ul class="parts games">
         <li><a href="games/life_partial_list.html"><span class="part-no">Challenge</span><span>
           <span class="part-title">Conway's Game of Life</span>

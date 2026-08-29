@@ -350,16 +350,39 @@
       font-size: 0.9em;
       color: var(--muted);
     }
+
+    .save-tools {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      background: var(--code-bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 0.85rem;
+    }
+
+    .save-tools button {
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      color: var(--accent);
+      background: white;
+      cursor: pointer;
+    }
+
+    [data-save-status][data-state="error"] {
+      color: #9a2d20;
+    }
   </style>
 </head>
 
-<body>
+<body data-game-id="life-list">
+  <script src="game-persistence.js"></script>
   <script>
-    const xOcaml = document.createElement('script');
-    xOcaml.src = new URL('x-ocaml.js', document.baseURI).href;
-    xOcaml.setAttribute('src-worker', new URL('x-ocaml.worker.js', document.baseURI).href);
-    xOcaml.async = true;
-    document.head.appendChild(xOcaml);
+    GamePersistence.restoreThenLoad();
   </script>
 
   <!-- ============================================================
@@ -466,9 +489,11 @@
       <p class="credit">Contributed by <a href="https://github.com/SmayanAgarwal">Smayan Agarwal</a>
         in <a href="https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3">PR #3</a>.</p>
       <p><strong>45-minute lab:</strong> complete Problems 1–3. The remaining
-        problems are optional stretches. Your edits are not saved across
-        reloads, so do not refresh this page. If you get stuck, use
+        problems are optional stretches. Your answers are saved locally in
+        this browser as you type. If you get stuck, use
         <strong>Check</strong>, inspect the tests, or open the reference solution.</p>
+      <p class="save-tools"><span data-save-status>Preparing local save…</span>
+        <button type="button" data-reset-saved-work>Reset saved work</button></p>
       <p>Need a refresher? Review
         <a href="../02-data-types.html#pattern-matching">pattern matching</a> and
         <a href="../02-data-types.html#matching-lists">matching lists</a>.</p>
@@ -1292,6 +1317,7 @@
         await new Promise((r) => setTimeout(r, 100));
       }
       document.querySelectorAll('.quiz-code').forEach(setupCodeQuiz);
+      GamePersistence.attach();
     })();
   </script>
 
