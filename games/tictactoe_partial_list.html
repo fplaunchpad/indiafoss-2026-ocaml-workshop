@@ -583,13 +583,24 @@
             begin match apply_move state.board pos with
             | None -> ()
             | Some board' ->
-            state.board <- board'; state.hint <- None end; refresh () let reset ()=state.board <- empty_board ();
-              state.hint <- None; refresh () let show_hint ()=if not (game_over ()) then state.hint <- !best_move_ref
-              state.board; refresh () let ()=Game_lib.on_click (fun payload ->
-              match payload with
-              | "reset" -> reset ()
-              | "hint" -> show_hint ()
-              | pos -> place (int_of_string pos))
+            state.board <- board'; state.hint <- None end;
+            refresh ()
+
+            let reset () =
+            state.board <- empty_board ();
+            state.hint <- None;
+            refresh ()
+
+            let show_hint () =
+            if not (game_over ()) then state.hint <- !best_move_ref state.board;
+            refresh ()
+
+            let () =
+            Game_lib.on_click (fun payload ->
+            match payload with
+            | "reset" -> reset ()
+            | "hint" -> show_hint ()
+            | pos -> place (int_of_string pos))
 
               let () =
               Game_lib.on_key (fun key ->
@@ -630,11 +641,12 @@
             print_endline "all tests passed"</x-ocaml>
       </div>
 
-      <p>Please note that the <code>let () = current_player ref </code> function is some plumbing
-        required for the structuring of this setup. You may ignore it. </p>
+      <p>The <code>let () = current_player_ref := current_player</code> line is
+        plumbing that registers your function with the board. The same line ends
+        most of the problems below; you can ignore it each time.</p>
 
-      <p>Once you have finished writing you code, you can check its correctness by pressing the
-        <code>Check</code>button.
+      <p>Once you have finished writing your code, you can check its correctness
+        by pressing the <code>Check</code> button.
       </p>
 
       <details class="solution">
@@ -653,7 +665,9 @@
       <h3>Problem 2: <code>no_empty_cells_left</code></h3>
       <div class="quiz quiz-code" data-quiz-id="ttt-q2">
         <p>This function requires you to check whether there are any <code>Empty</code> cells left on the board.
-          Might be worth </p>
+          A recursive helper that pattern-matches on the list works well; the
+          standard library's <code>List.for_all</code> is a one-line
+          alternative.</p>
         <x-ocaml run-on="click">let no_empty_cells_left b =
           failwith "not implemented"
 
@@ -677,10 +691,12 @@
           | Empty :: _ -> false
           | _ :: xs -> helper xs in
           helper b</x-ocaml>
-        <p><code>no_empty_cells</code> passes the function to the helper function which recursively
-          checks whether any of the cells are <code>Empty</code>. It return <code>true</code> once it reaches
-          an empty list: <code>[]</code>. Please note that in order for <code>helper</code> to call itself, it must
-          be declared to be <code>rec</code>.</p>
+        <p><code>no_empty_cells_left</code> passes the board to the helper function, which
+          recursively checks whether any of the cells are <code>Empty</code>. It
+          returns <code>true</code> once it reaches the empty list
+          <code>[]</code>, meaning no <code>Empty</code> cell was found along the
+          way. Note that in order for <code>helper</code> to call itself, it must
+          be declared <code>rec</code>.</p>
       </details>
 
       <!-- ================= PROBLEM 3: line_winner ================= -->
@@ -788,8 +804,8 @@
       <!-- ================= STRETCH: best_move ================= -->
       <h3>Stretch: <code>best_move</code></h3>
       <div class="quiz quiz-code" data-quiz-id="ttt-q7">
-        <p>The game is now funcitonally complete. This is an advanced problem for those interested.
-          This will add a new feature Hint which will return the best move from the current position.
+        <p>The game is now functionally complete. This is an advanced problem for those interested.
+          It powers the <strong>Hint</strong> button, which returns the best move from the current position.
 
           Given the current board you must do a depth first search over every possible moveset assuming that players
           play optimally. Any move can lead to three options: Victory, Draw, and Loss. A move should be classified as 
@@ -802,7 +818,17 @@
           failwith "not implemented"
 
           let () = best_move_ref := best_move</x-ocaml>
-
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          let b1 = set (set (set (set (empty_board ()) 0 (Taken X)) 1 (Taken X)) 3 (Taken O)) 4 (Taken O) in
+          check (best_move b1 = Some 2) "X to move can win immediately at 2";
+          let b2 = set (set (set (set (empty_board ()) 0 (Taken X)) 8 (Taken X)) 3 (Taken O)) 4 (Taken O) in
+          check (best_move b2 = Some 5) "X to move must block O at 5";
+          let b3 = [ Taken X; Taken O; Taken X;
+          Taken X; Taken O; Taken O;
+          Taken O; Taken X; Taken X ] in
+          check (best_move b3 = None) "a finished board has no move";
+          print_endline "all tests passed"</x-ocaml>
       </div>
       <details class="solution">
         <summary>Show reference solution</summary>

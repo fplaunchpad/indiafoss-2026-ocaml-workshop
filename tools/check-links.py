@@ -21,6 +21,11 @@ checks every internal link in content/*.md:
     [text](#anchor)                    same-file anchor
     /assets/... refs                   file must exist on disk
 
+It also checks the ../-relative links in games/*.html
+(href="../02-data-types.html#anchor" and the like), which point
+back into the built workshop pages and would otherwise break
+silently when a heading is renamed.
+
 Exit 0 when everything resolves; exit 1 with a failure list otherwise.
 """
 
@@ -30,6 +35,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONTENT = os.path.join(REPO, "content")
+GAMES = os.path.join(REPO, "games")
 
 # Pages emitted by tools/build-site.sh rather than from lectures/.
 BUILT_PAGES = {"index.html"}
@@ -138,6 +144,15 @@ def internal_links(md_path: str):
             yield lineno, m.group(1), "ASSET"
 
 
+def game_links(html_path: str):
+    """Yield (lineno, target, anchor) for ../-relative hrefs in a game page."""
+    with open(html_path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    for lineno, line in enumerate(lines, 1):
+        for m in re.finditer(r'href="\.\./([^"#]+)(?:#([^"]+))?"', line):
+            yield lineno, m.group(1), m.group(2)
+
+
 def main():
     md_files = sorted(
         f for f in os.listdir(CONTENT)
@@ -172,13 +187,35 @@ def main():
                         f"{where}: dead anchor {base}#{anchor}"
                     )
 
+    game_files = sorted(
+        f for f in os.listdir(GAMES) if f.endswith(".html")
+    ) if os.path.isdir(GAMES) else []
+    n_game_links = 0
+    for f in game_files:
+        for lineno, target, anchor in game_links(os.path.join(GAMES, f)):
+            n_game_links += 1
+            where = f"games/{f}:{lineno}"
+            base = os.path.basename(target)
+            if base in BUILT_PAGES:
+                continue
+            if base not in pages:
+                failures.append(f"{where}: link to unknown page ../{target}")
+                continue
+            if anchor:
+                src_md = base[:-5] + ".md"
+                if anchor not in ids_by_page.get(src_md, set()):
+                    failures.append(f"{where}: dead anchor {base}#{anchor}")
+
     if failures:
         print(f"check-links: {len(failures)} failure(s)")
         for x in failures:
             print("  " + x)
         return 1
     n_links = sum(1 for f in md_files for _ in internal_links(os.path.join(CONTENT, f)))
-    print(f"check-links: OK ({len(md_files)} pages, {n_links} internal refs)")
+    print(
+        f"check-links: OK ({len(md_files)} pages, {n_links} internal refs, "
+        f"{n_game_links} game-page refs)"
+    )
     return 0
 
 

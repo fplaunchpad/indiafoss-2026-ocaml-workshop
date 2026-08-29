@@ -57,9 +57,9 @@ Let's begin with a tour through the basics of the OCaml programming language.
 Ultimately, functional programming offers an alternative way to
 think about *programming*, which is useful even if you don't
 intend to regularly use a functional programming language. That said,
-ideas associated with functional programming—immutability,
+ideas associated with functional programming (immutability,
 first-class functions, algebraic data types, pattern matching and
-type inference—also appear in languages such as C++, Java, Python,
+type inference) also appear in languages such as C++, Java, Python,
 Rust, Kotlin and Elixir.
 
 ## Variables
@@ -655,7 +655,7 @@ let succ = add 1
 Given `let add x y = x + y` has type `int -> int -> int`, what is
 the type of `add 1`?
 
-- [ ] `int` — applying `add` to one argument is a type error.
+- [ ] `int`: applying `add` to one argument is a type error.
 - [x] `int -> int`: a function still waiting for the second
       argument.
 - [ ] `int -> int -> int`, unchanged, since `add` needs both
@@ -665,8 +665,8 @@ the type of `add 1`?
 **Why:** `add`'s type `int -> int -> int` is really
 `int -> (int -> int)`: a function that takes an `int` and returns
 another function `int -> int`. Applying `add` to just `1` supplies
-the first argument and returns that inner function — exactly how
-`let succ = add 1` works.
+the first argument and returns that inner function, which is
+exactly how `let succ = add 1` works.
 :::
 
 :::

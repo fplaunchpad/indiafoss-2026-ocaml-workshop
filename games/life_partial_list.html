@@ -537,7 +537,7 @@
         replace_nth r (replace_nth c v (List.nth g r)) g
 
         (* keeps a coordinate on the board by wrapping it around the edge *)
-        let wrap n limit = if n < 0 then n + limit else if n>= limit then n - limit else n
+        let wrap n limit = if n < 0 then n + limit else if n >= limit then n - limit else n
 
           (* the eight (row, column) offsets around a cell *)
           let neighbor_offsets =
@@ -576,14 +576,14 @@
           speed : int; (* ms between generations *)
           gen : int;
           birth_input : string; (* current text of the Birth box *)
-          death_input : string; (* current text of the Death box *)
+          survive_input : string; (* current text of the Survive box *)
           }
 
           let speeds = [ ("slow", 500); ("medium", 200); ("fast", 80) ]
 
           let new_session () =
           { grid = make_grid (); running = false; speed = 200; gen = 0;
-          birth_input = "3"; death_input = "23" }
+          birth_input = "3"; survive_input = "23" }
 
           let session = ref (new_session ())
 
@@ -651,7 +651,7 @@
           (match !custom_rule_ref with Some ("Maze", _) -> true | _ -> false)
           ^ "&lt;/div&gt;&lt;div class=\"controls\"&gt;"
           ^ text_input "birth-input" "Birth" s.birth_input
-          ^ text_input "death-input" "Death" s.death_input
+          ^ text_input "survive-input" "Survive" s.survive_input
           ^ "&lt;/div&gt;")
 
           let beep freq ms = Game_lib.play ~freq ~ms
@@ -743,7 +743,7 @@
           let handle_mouse (m : Game_lib.mouse) =
           let s = !session in
           match m.pos with
-          | "birth-input" | "death-input" -> ()
+          | "birth-input" | "survive-input" -> ()
           | _ ->
           (match m.pos with
           | "run" ->
@@ -769,13 +769,13 @@
           beep 440 90
           | None -> ())
           | pos when String.length pos > 5 && String.sub pos 0 5 = "rule:" ->
-          (* Fills in the Birth/Death boxes with the numbers that make up
+          (* Fills in the Birth/Survive boxes with the numbers that make up
           the preset, whether or not parse_rule is written yet -- the
           whole point of the buttons is to show that tuning Life is just
           two numbers, even before you can press one. *)
-          let apply label birth death =
-          session := { s with birth_input = string_of_int birth; death_input = string_of_int death };
-          match (try Some (!parse_rule_ref birth death) with _ -> None) with
+          let apply label birth survive =
+          session := { s with birth_input = string_of_int birth; survive_input = string_of_int survive };
+          match (try Some (!parse_rule_ref birth survive) with _ -> None) with
           | Some rule ->
           custom_rule_ref := Some (label, rule);
           beep 380 90
@@ -784,7 +784,7 @@
           (match String.sub pos 5 (String.length pos - 5) with
           | "conway" ->
           custom_rule_ref := None;
-          session := { s with birth_input = "3"; death_input = "23" };
+          session := { s with birth_input = "3"; survive_input = "23" };
           beep 300 90
           | "highlife" -> apply "HighLife" 36 23
           | "seeds" -> apply "Seeds" 2 0
@@ -806,24 +806,25 @@
           refresh ()
 
           let valid_rule_number s =
-          s <> "" && String.for_all (fun ch -> ch >= '0' && ch <= '9' ) s let apply_birth_death birth_str death_str=if
-              valid_rule_number birth_str && valid_rule_number death_str then match (try Some (!parse_rule_ref
-              (int_of_string birth_str) (int_of_string death_str)) with _ -> None)
-              with
-              | Some rule ->
-              custom_rule_ref := Some ("Custom", rule);
-              beep 380 90
-              | None -> ()
+          s <> "" && String.for_all (fun ch -> ch >= '0' && ch <= '9') s
+
+          let apply_birth_survive birth_str survive_str =
+          if valid_rule_number birth_str && valid_rule_number survive_str then
+          match (try Some (!parse_rule_ref (int_of_string birth_str) (int_of_string survive_str)) with _ -> None) with
+          | Some rule ->
+          custom_rule_ref := Some ("Custom", rule);
+          beep 380 90
+          | None -> ()
 
               let handle_input pos value =
               let s = !session in
               (match pos with
               | "birth-input" ->
               session := { s with birth_input = value };
-              apply_birth_death value s.death_input
-              | "death-input" ->
-              session := { s with death_input = value };
-              apply_birth_death s.birth_input value
+              apply_birth_survive value s.survive_input
+              | "survive-input" ->
+              session := { s with survive_input = value };
+              apply_birth_survive s.birth_input value
               | _ -> ());
               refresh ()
 
@@ -1072,6 +1073,14 @@
           cell's random_grid_ref) so Random and the r/R key pick it up on the
           very next press. *)
           let () = random_grid_ref := random_grid</x-ocaml>
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          let g0 = random_grid 0.0 in
+          check (List.length g0 = rows) "the grid has `rows` rows";
+          check (List.for_all (fun row -> List.length row = cols) g0) "every row has `cols` cells";
+          check (population g0 = 0) "p = 0.0 leaves every cell dead";
+          check (population (random_grid 1.0) = rows * cols) "p = 1.0 makes every cell alive";
+          print_endline "all tests passed"</x-ocaml>
       </div>
       <details class="solution">
         <summary>Show reference solution</summary>
@@ -1102,9 +1111,9 @@
           cell is born on exactly 3") are really just one example of a whole
           family of similar automata. Two numbers describe any of them: a
           <strong>Birth</strong> number, whose digits are the neighbor counts
-          that bring a dead cell to life, and a <strong>Death</strong> number,
+          that bring a dead cell to life, and a <strong>Survive</strong> number,
           whose digits are the neighbor counts a live cell survives on.
-          Conway is birth <code>3</code>, death <code>23</code> -- born on
+          Conway is birth <code>3</code>, survive <code>23</code> -- born on
           exactly 3 neighbors, survives on 2 or 3. Change one digit -- birth
           <code>36</code> instead of <code>3</code> -- and you get "HighLife",
           a different automaton on the exact same grid, famous for containing
@@ -1114,11 +1123,11 @@
           (next problem) will actually use, one <code>int</code> per digit:
           <code>parse_rule 3 23</code> becomes <code>([3], [2; 3])</code>.
         </p>
-        <x-ocaml run-on="click" locked-until-prev>let parse_rule birth death =
+        <x-ocaml run-on="click" locked-until-prev>let parse_rule birth survive =
           failwith "not implemented"
 
           (* PROVIDED -- registers your function with the board (see the setup
-          cell's parse_rule_ref); the rule preset buttons and the Birth/Death
+          cell's parse_rule_ref); the rule preset buttons and the Birth/Survive
           text boxes in the sidebar call through this the moment you press or
           edit one, no re-run needed. *)
           let () = parse_rule_ref := parse_rule</x-ocaml>
@@ -1132,7 +1141,7 @@
       <details class="solution">
         <summary>Show reference solution</summary>
         <p>Reference solution:</p>
-        <x-ocaml run-on="peek">let parse_rule birth death =
+        <x-ocaml run-on="peek">let parse_rule birth survive =
           let digits_of n =
           let rec loop n acc =
           if n <= 0 then acc
@@ -1140,7 +1149,7 @@
           in
           loop n []
           in
-          (digits_of birth, digits_of death)</x-ocaml>
+          (digits_of birth, digits_of survive)</x-ocaml>
         <p><code>digits_of</code> turns a number like <code>36</code> into the
           list <code>[3; 6]</code> by peeling digits off the low end with
           arithmetic: <code>n mod 10</code> is the last digit, <code>n / 10</code>
@@ -1176,10 +1185,22 @@
 
           let () = next_cell_state_general_ref := next_cell_state_general
           let () = rule_feature_ready := true</x-ocaml>
-        <!-- HIDDEN TEST CELL: matches next_cell_state exactly on
-             (parse_rule 3 23) for all (alive, live_neighbors)
-             combinations 0-8; diverges correctly at (false, 6) --
-             standard Life stays dead, (parse_rule 36 23) is alive. -->
+        <x-ocaml data-quiz-test="true" hidden run-on="peek">let check b m = if not b then failwith m
+          let () =
+          let conway = parse_rule 3 23 in
+          List.iter
+          (fun alive ->
+          List.iter
+          (fun n ->
+          check
+          (next_cell_state_general conway alive n = next_cell_state alive n)
+          (Printf.sprintf "conway rule agrees with next_cell_state (alive=%b, neighbors=%d)" alive n))
+          [0; 1; 2; 3; 4; 5; 6; 7; 8])
+          [true; false];
+          let highlife = parse_rule 36 23 in
+          check (next_cell_state_general highlife false 6 = true) "HighLife: a dead cell with 6 neighbors is born";
+          check (next_cell_state_general conway false 6 = false) "standard Life: a dead cell with 6 neighbors stays dead";
+          print_endline "all tests passed"</x-ocaml>
       </div>
       <details class="solution">
         <summary>Show reference solution</summary>

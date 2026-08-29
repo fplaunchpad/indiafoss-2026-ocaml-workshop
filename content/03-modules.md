@@ -1,5 +1,5 @@
 ---
-title: "Modules"
+title: "Modules and Abstraction"
 part: 3
 duration_target_min: 20
 concepts: [structures, file modules, signatures, abstract types, interfaces]
@@ -18,7 +18,7 @@ reading:
 
 <div class="title-slide-inner">
 <p class="title-slide-workshop">Fun and Profit with OCaml</p>
-<h2 class="title-slide-part">Modules</h2>
+<h2 class="title-slide-part">Modules and Abstraction</h2>
 <p class="title-slide-label">Part 3 of 3</p>
 </div>
 
@@ -267,7 +267,7 @@ Error: This expression has type IntSet.t
 
 ### Live demo: change the representation
 
-The useful part of abstraction is not the error by itself—it is
+The useful part of abstraction is not the error by itself; it is
 what the error makes possible. In the live session:
 
 1. Run the `IntSet` implementation and its client.

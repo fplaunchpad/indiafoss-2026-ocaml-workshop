@@ -46,7 +46,7 @@ renders the site, and runs the browser smoke checks.
 
 ## Project layout
 
-- `content/` — the three workshop parts and their navigation labels
+- `content/` — the three workshop parts
 - `tools/workshop-build/` — Markdown-to-HTML builder
 - `assets/x-ocaml/` — prebuilt in-browser OCaml runtime
 - `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
