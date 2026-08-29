@@ -1,9 +1,9 @@
 ---
-title: "OCaml - Basics"
+title: "OCaml Basics"
 part: 1
-duration_target_min: 145
-concepts: [primitive types, literal syntax, OCaml number representation, string syntax, let bindings, let-in expressions, scope, shadowing, immutability, inference rules, static typing, dynamic typing, type errors, type inference, type signatures, operator precedence, arithmetic operators, comparison, logical operators, common type errors, if as expression, expression-oriented language, branches must agree, type rule for if, expression composition, reading type errors, writing small programs]
-keywords: [OCaml, int, float, bool, string, literals, primitive types, let, let-in, scope, shadowing, immutability, bindings, semantics, static typing, dynamic typing, type inference, Hindley-Milner, type errors, operators, precedence, comparison, equality, logical operators, if expression, conditional, branches, expression-oriented, tutorial, expressions, beginner exercises]
+duration_target_min: 30
+concepts: [bindings, type inference, conditionals, functions, recursion, labelled arguments, higher-order functions, currying, anonymous functions]
+keywords: [OCaml, functional programming, types, functions, recursion, List.map, partial application]
 reading:
   - title: "Real World OCaml, A Guided Tour (numbers, let bindings, and type-inference sections)"
     url: https://dev.realworldocaml.org/guided-tour.html
@@ -20,7 +20,7 @@ reading:
 
 <div class="title-slide-inner">
 <p class="title-slide-workshop">Fun and Profit with OCaml</p>
-<h2 class="title-slide-part">OCaml - Basics</h2>
+<h2 class="title-slide-part">OCaml Basics</h2>
 <p class="title-slide-label">Part 1 of 3</p>
 </div>
 
@@ -44,38 +44,23 @@ Let's begin with a tour through the basics of the OCaml programming language.
 
 :::
 
-- OCaml is an industrial-strength, functional programming
-  language.
-  - In the same family as Haskell and Standard ML.
-  - Initially developed at [INRIA](https://inria.fr/en), the National Institute
-  for Research in Digital Science and Technology in France and is now a
-  well-maintained open-source project developed on
-    [Github](https://github.com/ocaml/ocaml).
-- It supports multiple paradigms of programming: functional, imperative
-    and object-oriented.
-- A fast compiler that produces efficient native code for x86,
-  ARM, RISC-V, etc., as well as JavaScript (via WASM).
-- A number of organisations use the language including:
-  - Jane Street ([OCaml use at Jane
-    Street](https://www.janestreet.com/tech-talks/ocaml-all-the-way-down/)).
-  - Microsoft ([Everest project](https://project-everest.github.io/), [F*](https://fstar-lang.org/) programming language).
-  - Facebook (Hack, Infer, Flow, ReasonML). [More than 50%
-    messenger.com is
-    ReasonML](https://reasonml.github.io/blog/2017/09/08/messenger-50-reason.html).
-  - Docker (for Mac and Windows use MirageOS libraries).
-  - and a variety of other research projects including Coq
-    proof assistant, Compcert verified C compiler, MirageOS
-    Unikernel OS, etc.
+- OCaml is an industrial-strength functional language in the same
+  family as Haskell and Standard ML.
+- Initially developed at [INRIA](https://inria.fr/en), it is now a
+  well-maintained [open-source project](https://github.com/ocaml/ocaml).
+- It supports functional, imperative and object-oriented programming.
+- Its native compiler targets architectures including x86, ARM and
+  RISC-V. Ecosystem compilers also target JavaScript and WebAssembly.
+- OCaml is used for financial systems, developer tools, static analysis,
+  compilers, proof assistants, network services and unikernels.
 
 Ultimately, functional programming offers an alternative way to
 think about *programming*, which is useful even if you don't
 intend to regularly use a functional programming language. That said,
-many ideas and constructs widely used in functional programming
-such as immutability of data structures, lambdas,
-coroutines, promises, monads, lenses, applicatives, functors,
-type inference are being adopted in not only mainstream imperative languages in C++,
-Java, Python, Rust etc., but also new languages that run on your favourite platform:
-Clojure and Kotlin on the JVM, Elixir on Erlang OTP, etc.
+ideas associated with functional programming—immutability,
+first-class functions, algebraic data types, pattern matching and
+type inference—also appear in languages such as C++, Java, Python,
+Rust, Kotlin and Elixir.
 
 ## Variables
 
@@ -340,8 +325,9 @@ let add x y = x + y
 
 ### Function application
 
-Unlike most imperative languages, functions are applied without
-any brackets:
+Function application is written by placing each argument after the
+function name. Parentheses group expressions; they are not special
+function-call syntax:
 
 :::slide
 
@@ -352,7 +338,8 @@ let b = succ 8
 let c = add a b
 ```
 
-- Write `succ 8`, not `succ(8)`.
+- The idiomatic spelling is `succ 8`. The expression `succ (8)` also
+  parses, but the parentheses merely group the argument `8`.
 - Application binds tighter than any operator, so
   `succ 8 + 1` means `(succ 8) + 1`.
 
@@ -510,7 +497,7 @@ We can then call it using:
 divide ~dividend:9 ~divisor:3
 ```
 
-Labelled arguments can be passed in in any order (!)
+Labelled arguments can be passed in any order.
 
 ```ocaml
 divide ~divisor:3 ~dividend:9
@@ -589,7 +576,7 @@ let modulo ~dividend ~divisor =
 Since OCaml is a functional language, functions are regular
 values which can be used like any other. In particular, they can
 be used as arguments to other functions. Functions which take
-other functions as arguments as called higher-order functions.
+other functions as arguments are called higher-order functions.
 
 For example, the `List.map` function takes two arguments: a
 function and a list, and returns a new list created by applying
@@ -686,7 +673,7 @@ the first argument and returns that inner function — exactly how
 
 ### Anonymous functions
 
-Instead of defining each function with a let, often times it is
+Instead of defining each function with a `let`, it is often
 handy to define functions on the fly. OCaml has support for
 anonymous functions, which allows you to define unnamed
 functions. To write an anonymous function, the `fun` keyword is

@@ -13,6 +13,8 @@ The workshop has three parts:
 It also includes interactive Game of Life and Tic-Tac-Toe exercises contributed
 by [Smayan Agarwal](https://github.com/SmayanAgarwal) in
 [PR #3](https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3).
+The three-hour session reserves its final 45 minutes for participants to choose
+and work on one of these games; stretch problems can be continued afterward.
 
 Every OCaml block is editable and runnable in the browser. Each page can
 also switch into a reveal.js slide deck for the live session.

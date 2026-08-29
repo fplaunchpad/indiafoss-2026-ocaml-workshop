@@ -396,6 +396,13 @@
       <h1>Practice: Tic-Tac-Toe <small style="color: var(--muted); font-weight: 400;">(list version)</small></h1>
       <p class="credit">Contributed by <a href="https://github.com/SmayanAgarwal">Smayan Agarwal</a>
         in <a href="https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3">PR #3</a>.</p>
+      <p><strong>45-minute lab:</strong> complete Problems 1–5. The
+        <code>best_move</code> problem is an optional stretch. Your edits are not
+        saved across reloads, so do not refresh this page. If you get stuck,
+        use <strong>Check</strong>, inspect the tests, or open the reference solution.</p>
+      <p>Need a refresher? Review
+        <a href="../02-data-types.html#pattern-matching">pattern matching</a> and
+        <a href="../02-data-types.html#matching-lists">matching lists</a>.</p>
 
       <p>Five small functions build the whole game: <code>current_player</code>
         runs the turn engine, <code>line_winner</code>, <code>winner</code>, and
@@ -424,7 +431,7 @@
         (* nine cells, index 0-8, left-to-right top-to-bottom *)
 
         let empty_board () = List.init 9 (fun _ -> Empty)
-        (* initalises the board to be completely empty *)
+        (* initialises the board to be completely empty *)
 
         let get b i = List.nth b i
         (* gets the value of the i^th cell from the board b *)

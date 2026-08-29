@@ -99,14 +99,18 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       </span></a></li>
     </ol>
     <section>
-      <h2>Practice with games</h2>
-      <p>Apply the ideas from Part 2 in a larger interactive exercise.</p>
+      <h2>Final 45-minute game lab</h2>
+      <p>Choose one game. Tic-Tac-Toe is the recommended starting point;
+        Game of Life is the challenge path. Complete the numbered problems
+        first—the stretch problems are optional.</p>
+      <p><strong>Open your chosen game during the briefing and do not refresh
+        the page: edits are not saved across reloads.</strong></p>
       <ul class="parts games">
-        <li><a href="games/life_partial_list.html"><span class="part-no">Exercise</span><span>
+        <li><a href="games/life_partial_list.html"><span class="part-no">Challenge</span><span>
           <span class="part-title">Conway's Game of Life</span>
           <span class="part-summary">Build a simulation using lists</span>
         </span></a></li>
-        <li><a href="games/tictactoe_partial_list.html"><span class="part-no">Exercise</span><span>
+        <li><a href="games/tictactoe_partial_list.html"><span class="part-no">Recommended</span><span>
           <span class="part-title">Tic-Tac-Toe</span>
           <span class="part-summary">Build a playable game step by step</span>
         </span></a></li>

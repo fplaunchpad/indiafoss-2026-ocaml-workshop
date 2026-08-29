@@ -1,9 +1,9 @@
 ---
 title: "Data Types and Pattern Matching"
 part: 2
-duration_target_min: 145
-concepts: []
-keywords: []
+duration_target_min: 50
+concepts: [type aliases, records, mutability, variants, pattern matching, parameterised types, recursive types, lists]
+keywords: [OCaml, algebraic data types, records, option, exhaustive matching, recursion]
 reading:
   - title: "The OCaml manual, Data types section"
     url: https://ocaml.org/manual/5.5/coreexamples.html#s%3Adatatypes
@@ -25,9 +25,9 @@ reading:
 
 :::
 
-OCaml has a concise and expressive system for creating new
-datatypes. It also supports pattern matching to naturally express
-deconstruction of these data types.
+OCaml has a concise and expressive system for creating new data
+types. Pattern matching provides a natural way to inspect and
+deconstruct values of those types.
 
 ## Type aliases
 
@@ -55,7 +55,7 @@ let id (x : int_pair) = x
 type int_pair = int * int
 ```
 
-The above defines a type `int_pair` which is an alias to the pair
+The above defines a type `int_pair` which is an alias for the pair
 of ints type (`int * int`).
 
 You can constrain the type of an expression using the `:` operator.
@@ -182,16 +182,15 @@ let mk_point x y z = { x; y; z }
 
 ## Mutability
 
-OCaml has first-class support for mutability. There are several
-langauge features that support mutability in OCaml. One of them is
-mutable record fields. Let us make a mutable point datatype.
+OCaml supports mutability where it is useful. One mechanism is a
+mutable record field. Let us make a mutable point data type.
 
 ```ocaml
 type mpoint = {mutable x : int; mutable y : int; mutable z: int}
 ```
 
 Notice that the type says that the fields are `mutable`. Just like
-the point datatype defined previously, you can create a value of
+the point data type defined previously, you can create a value of
 `mpoint` type and read it.
 
 ```ocaml
@@ -247,8 +246,8 @@ than making a new one.
 
 ### References
 
-It is sometimes useful to create single mutable value. OCaml
-provides reference cells for this purpose
+It is sometimes useful to create a single mutable value. OCaml
+provides reference cells for this purpose.
 
 :::slide
 
@@ -399,7 +398,7 @@ let p = p_or_c (1 > 0) origin red
 
 ### Multiple constructor arguments
 
-Variants constructors can contain multiple arguments seperated by
+Variant constructors can contain multiple arguments separated by
 the `*` symbol:
 
 :::slide
@@ -426,7 +425,7 @@ type s =
 | TwoColours of colour * colour
 ```
 
-Creating these constructors with multiple arguments require
+Creating these constructors with multiple arguments requires
 parentheses:
 
 ```ocaml
@@ -435,14 +434,14 @@ let s = TwoColours(Red, Green)
 
 ## Pattern matching
 
-Before we go on, let us define a handy print function to print
-stuff to the terminal.
+Before we go on, let us define a small helper that prints a string
+to the terminal.
 
 ```ocaml
 let show s = print_endline s
 ```
 
-Now we can print things to screen
+Now we can print a message:
 
 ```ocaml
 show "Hello, world!"
@@ -452,7 +451,7 @@ show "Hello, world!"
 
 So far we have created some values of variant types, but how do we
 get the data back out of them? The answer is *pattern matching*.
-Using a `match` statement we can deconstruct a variant type and
+Using a `match` expression we can deconstruct a variant value and
 retrieve its constructor's arguments:
 
 :::slide
@@ -612,9 +611,9 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 
 ### The `_` pattern
 
-Sometimes, you do not care about the value of a constructor, in
-this case you can use the `_` pattern which will match any
-constructor:
+Sometimes, you do not care about a value. In that case you can use
+the `_` pattern, which matches any value without binding it to a
+name:
 
 :::slide
 
@@ -627,8 +626,8 @@ let is_colour_red t =
   | _ -> false
 ```
 
-- Sometimes you do not care about the value of a constructor.
-- The `_` pattern matches any constructor.
+- Sometimes you do not care about a matched value.
+- The `_` pattern matches any value without binding it to a name.
 
 :::
 
@@ -728,7 +727,7 @@ type 'a option =
 ```
 
 In the above the `'a` is a *type variable*, which can be
-substituted by any type. For instance a we can create a value of
+substituted by any type. For instance, we can create a value of
 type `int option` or a value of type `colour option`:
 
 ```ocaml
@@ -916,7 +915,7 @@ let l = 1 :: 2 :: 3 :: []
 
 :::
 
-OCaml also provides a short-hand syntax for lists: `[ ..; .. ]`.
+OCaml also provides a shorthand syntax for lists: `[ ..; .. ]`.
 Our `l` value above could instead have been defined:
 
 ```ocaml

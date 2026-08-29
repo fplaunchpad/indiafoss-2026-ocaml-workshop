@@ -1,9 +1,9 @@
 ---
 title: "Modules"
 part: 3
-duration_target_min: 145
-concepts: []
-keywords: []
+duration_target_min: 20
+concepts: [structures, file modules, signatures, abstract types, interfaces]
+keywords: [OCaml, modules, signatures, abstraction, interfaces, mli]
 reading:
   - title: "The OCaml manual, The module system"
     url: https://ocaml.org/manual/5.5/moduleexamples.html
@@ -135,7 +135,7 @@ structures, like the one above, are often called *signatures*.
 
 ### Signature ascription
 
-Whilst OCaml will infer the module type of a structure from its
+While OCaml will infer the module type of a structure from its
 definition, you can also ascribe it a more restricted signature.
 This allows us to hide some of the details of the structure:
 
@@ -216,7 +216,7 @@ let s = IntSet.add 6 (IntSet.add 5 IntSet.empty)
 let b = IntSet.mem 6 s
 ```
 
-By not including the defintion of `t` in the signature, we hide
+By not including the definition of `t` in the signature, we hide
 the implementation of `IntSet`. This means that users of our set
 type cannot depend on the fact we have implemented it using lists.
 
@@ -279,7 +279,7 @@ Later we can switch to a more efficient implementation using trees
 safe in the knowledge that this will not break existing code using
 `IntSet`.
 
-Types with hiddent definitions, like `t` above, are called
+Types with hidden definitions, like `t` above, are called
 abstract types. OCaml's support for abstraction is one of its most
 important and powerful features.
 
@@ -290,7 +290,7 @@ interface file. For example, if a file called `foo.ml` defines a
 structure called `Foo` then `foo.mli` defines the signature of
 `Foo`. Corresponding to the
 [`list.ml`](https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml)
-in the OCaml standar library, we have
+in the OCaml standard library, we have
 [`list.mli`](https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.mli)
 which describes the signature of the list interface.
 

@@ -13,6 +13,19 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 
 try {
+  const landing = await context.newPage();
+  await landing.goto(`${ROOT}/index.html`, { waitUntil: 'domcontentloaded' });
+  const landingText = await landing.locator('main').innerText();
+  const gameLinks = await landing.locator('.games a').evaluateAll(links =>
+    links.map(link => link.getAttribute('href')));
+  if (!landingText.includes('Final 45-minute game lab')
+      || !landingText.includes('do not refresh')
+      || !gameLinks.includes('games/life_partial_list.html')
+      || !gameLinks.includes('games/tictactoe_partial_list.html')) {
+    throw new Error('landing page is missing the game-lab guidance or links');
+  }
+  await landing.close();
+
   for (const [name, path] of games) {
     const page = await context.newPage();
     const errors = [];
@@ -35,6 +48,9 @@ try {
     const cellCount = await page.locator('x-ocaml').count();
     const credit = await page.locator('.credit').textContent();
     const home = await page.locator('.workshop-nav a').getAttribute('href');
+    const pageText = await page.locator('.content').innerText();
+    const refresherLinks = await page.locator('.content a[href*="02-data-types"]')
+      .evaluateAll(links => links.map(link => link.getAttribute('href')));
 
     // Running the board cell also evaluates its unfinished predecessors.
     await page.evaluate(() => {
@@ -59,6 +75,12 @@ try {
       [cellCount > 1, `expected multiple OCaml cells, found ${cellCount}`],
       [credit?.includes('Smayan Agarwal'), 'contributor credit is missing'],
       [home === '../index.html', `workshop-home link is ${home}`],
+      [pageText.includes('45-minute lab:'), 'game-lab scope is missing'],
+      [pageText.includes('not saved across reloads'), 'reload warning is missing'],
+      [refresherLinks.includes('../02-data-types.html#pattern-matching'),
+        'pattern-matching refresher link is missing'],
+      [refresherLinks.includes('../02-data-types.html#matching-lists'),
+        'list-matching refresher link is missing'],
       [panelChildren > 0, 'game panel did not render'],
       [errors.length === 0, errors.join('\n')],
     ].filter(([ok]) => !ok).map(([, message]) => message);
