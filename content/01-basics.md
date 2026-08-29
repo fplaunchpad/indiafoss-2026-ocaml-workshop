@@ -519,13 +519,24 @@ divide ~divisor:3 ~dividend:9
 We can also pass variables into the labelled argument:
 
 ```ocaml
-let dividend = 9 in
-let divisor  = 3 in
-divide ~dividend:dividend ~divisor:divisor
+let to_divide = 9 in
+let divide_by = 3 in
+divide ~dividend:to_divide ~divisor:divide_by
 ```
 
-If the variable name happens to be the same as the labelled
-argument, we don't even have to write it twice:
+The label and the parameter used inside a function can also be
+written separately. Formatting is disabled for this example so the
+explicit spelling remains visible:
+
+```ocaml
+[@@@ocamlformat "disable"]
+
+let divide_explicit ~dividend:dividend ~divisor:divisor =
+  dividend / divisor
+```
+
+When the label and parameter have the same name, OCaml lets us omit
+the repeated name. This is called *label punning*:
 
 ```ocaml
 let dividend = 9 in

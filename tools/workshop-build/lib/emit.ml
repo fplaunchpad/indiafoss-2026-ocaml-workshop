@@ -93,18 +93,10 @@ let head ~asset_root ~(fm : Frontmatter.t) =
       });
     }
   </script>
-  <!-- x-ocaml runs ocamlformat over every cell before handing it to
-       the editor. That rewrites the workshop source: notably it puns
-       labelled arguments, so an [~dividend:dividend] written to
-       contrast with the punned form renders as [~dividend] and the
-       teaching point disappears. [disable=true] keeps each cell
-       exactly as authored in the markdown. [margin=60] is kept so
-       the intended width is recorded if formatting is re-enabled. -->
   <script async
     src="%s/assets/x-ocaml/x-ocaml.js?v=%s"
     src-worker="%s/assets/x-ocaml/x-ocaml.worker.js?v=%s"
-    x-ocamlformat="margin=60
-disable=true"></script>
+    x-ocamlformat="margin=60"></script>
 </head>|}
     (Parse.html_escape (if fm.title = "" then "(untitled workshop part)" else fm.title))
     asset_root asset_root asset_root chapter_css_v asset_root slides_css_v
