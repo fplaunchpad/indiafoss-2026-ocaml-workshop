@@ -27,18 +27,10 @@ Below you can read some of the important functions and definitions that you will
 
         let make_grid () = List.init rows (fun _ -> List.init cols (fun _ -> false)) (* a fresh, all-dead board *)
 
-        (* reads the cell at (r, c). Lists have no `.(r).(c)` syntax, so every
-        read in this exercise goes through this instead. *)
+        (* reads the cell at (r, c). Lists have no `.(r).(c)` syntax, so every read in this exercise goes through this instead. *)
         let get g r c = List.nth (List.nth g r) c
 
-        (* returns a NEW board with (r, c) set to v, everything else unchanged.
-        replace_nth is a local helper: it returns a NEW list with the
-        element at index i replaced by v, everything else unchanged,
-        walking the list one cell at a time (at index 0, swap in v and
-        keep the rest as-is; otherwise keep this element and recurse on
-        the tail with one fewer step to go). set calls it twice: once to
-        replace the one cell within its row, then again to replace that
-        whole (now-updated) row within the board. *)
+        (* returns a NEW board with (r, c) set to v, everything else unchanged. replace_nth is a local helper: it returns a NEW list with the element at index i replaced by v, everything else unchanged, walking the list one cell at a time (at index 0, swap in v and keep the rest as-is; otherwise keep this element and recurse on the tail with one fewer step to go). set calls it twice: once to replace the one cell within its row, then again to replace that whole (now-updated) row within the board. *)
         let set g r c v =
         let rec replace_nth i v lst =
         match lst with
@@ -61,9 +53,7 @@ Open the provided game code below and press **Run** to render the board. You nee
 :::game-panel
 ```ocaml
 
-          (* PROVIDED, continued -- drawing, session state, patterns, and the
-          board's event wiring. Uses rows/cols/grid/make_grid/get/set/wrap/
-          neighbor_offsets from the cell just above. *)
+          (* PROVIDED, continued -- drawing, session state, patterns, and the board's event wiring. Uses rows/cols/grid/make_grid/get/set/wrap/ neighbor_offsets from the cell just above. *)
           let cell_html r c alive =
           Printf.sprintf "<td class=\"%s\" data-xo-pos=\"%d:%d\"></td>"
           (if alive then "life-on" else "life-off")
@@ -96,23 +86,13 @@ Open the provided game code below and press **Run** to render the board. You nee
 
           let session = ref (new_session ())
 
-          (* Forward references to functions this cell needs but that don't exist
-          yet -- population (Problem 1), advance (defined right after
-          next_generation), and random_grid (the Stretch problem) all live
-          further down the page. Each ref starts as a stub; the cell that
-          defines the real function reassigns it as its own last line. Declared here, before `controls` below, because
-          `controls` itself reads `!rule_feature_ready`/`!custom_rule_ref`
-          directly -- a plain, single-cell "used before declared" mistake if
-          they lived any later, unrelated to any of the cross-cell
-          forward-reference machinery this comment is otherwise about. *)
+          (* Forward references to functions this cell needs but that don't exist yet -- population (Problem 1), advance (defined right after next_generation), and random_grid (the Stretch problem) all live further down the page. Each ref starts as a stub; the cell that defines the real function reassigns it as its own last line. Declared here, before `controls` below, because `controls` itself reads `!rule_feature_ready`/`!custom_rule_ref` directly -- a plain, single-cell "used before declared" mistake if they lived any later, unrelated to any of the cross-cell forward-reference machinery this comment is otherwise about. *)
 
           let population_ref : (grid -> int) ref = ref (fun _ -> failwith "not implemented")
           let advance_ref : (unit -> unit) ref = ref (fun () -> ())
           let random_grid_ref : (float -> grid) ref = ref (fun _ -> failwith "not implemented")
 
-          (* The same forward-reference trick, for the two stretch problems
-          all the way at the bottom of the page (parse_rule and
-          next_cell_state_general). *)
+          (* The same forward-reference trick, for the two stretch problems all the way at the bottom of the page (parse_rule and next_cell_state_general). *)
           let parse_rule_ref : (int -> int -> int list * int list) ref =
           ref (fun _ _ -> failwith "not implemented")
           let next_cell_state_general_ref : (int list * int list -> bool -> int -> bool) ref =
@@ -125,8 +105,7 @@ Open the provided game code below and press **Run** to render the board. You nee
           (if active then "on" else "")
           label
 
-          (* A text field whose value only reaches Game_lib.on_input once the
-          student leaves it *)
+          (* A text field whose value only reaches Game_lib.on_input once the student leaves it *)
           let text_input pos label value =
           Printf.sprintf
           "<label>%s <input type=\"text\" inputmode=\"numeric\" size=\"6\" maxlength=\"9\" data-xo-pos=\"%s\"
@@ -165,9 +144,7 @@ Open the provided game code below and press **Run** to render the board. You nee
 
           let beep freq ms = Game_lib.play ~freq ~ms
 
-          (* The clock is REQUESTED, not run, by this cell: [every] states a rate and
-          the page's main thread owns the actual timer (the worker has no DOM and
-          no way to cancel a stale one). [every 0] stops it. *)
+          (* The clock is REQUESTED, not run, by this cell: [every] states a rate and the page's main thread owns the actual timer (the worker has no DOM and no way to cancel a stale one). [every 0] stops it. *)
           let sync_clock () =
           let s = !session in
           Game_lib.every (if s.running then s.speed else 0)
@@ -176,9 +153,7 @@ Open the provided game code below and press **Run** to render the board. You nee
           session := { !session with speed = ms };
           sync_clock ()
 
-          (* PROVIDED -- a handful of classic Life patterns, so the board can show
-          off what this game is actually capable of before you've written a
-          line of code. *)
+          (* PROVIDED -- a handful of classic Life patterns, so the board can show off what this game is actually capable of before you've written a line of code. *)
 
           let pattern_of_lines lines ~r0 ~c0 =
           let g = ref (make_grid ()) in
@@ -221,9 +196,7 @@ Open the provided game code below and press **Run** to render the board. You nee
           | "pentadecathlon" -> Some (pattern_of_lines pentadecathlon_pattern ~r0:11 ~c0:7)
           | _ -> None
 
-          (* PROVIDED. Drawing on the board never depends on a graded exercise, so
-          these live here too -- clicking or dragging a cell to flip it works
-          from the very first page load, before you've solved anything below.*)
+          (* PROVIDED. Drawing on the board never depends on a graded exercise, so these live here too -- clicking or dragging a cell to flip it works from the very first page load, before you've solved anything below. *)
 
           let set_cell g r c alive = set g r c alive
 
@@ -278,10 +251,7 @@ Open the provided game code below and press **Run** to render the board. You nee
           beep 440 90
           | None -> ())
           | pos when String.length pos > 5 && String.sub pos 0 5 = "rule:" ->
-          (* Fills in the Birth/Survive boxes with the numbers that make up
-          the preset, whether or not parse_rule is written yet -- the
-          whole point of the buttons is to show that tuning Life is just
-          two numbers, even before you can press one. *)
+          (* Fills in the Birth/Survive boxes with the numbers that make up the preset, whether or not parse_rule is written yet -- the whole point of the buttons is to show that tuning Life is just two numbers, even before you can press one. *)
           let apply label birth survive =
           session := { s with birth_input = string_of_int birth; survive_input = string_of_int survive };
           match (try Some (!parse_rule_ref birth survive) with _ -> None) with
@@ -360,12 +330,7 @@ Open the provided game code below and press **Run** to render the board. You nee
               !advance_ref ();
               refresh ())
 
-              (* Repaints whenever some OTHER cell (population, count_live_neighbors,
-              advance, ...) finishes running -- see src/game_host.ml's
-              [repaint_all]. Without this, solving a problem only became visible on
-              the board after the next click/keypress/tick, since [refresh] called
-              from that OTHER cell's own code paints into that cell's own output,
-              never into #game-panel. *)
+              (* Repaints whenever some OTHER cell (population, count_live_neighbors, advance, ...) finishes running -- see src/game_host.ml's [repaint_all]. Without this, solving a problem only became visible on the board after the next click/keypress/tick, since [refresh] called from that OTHER cell's own code paints into that cell's own output, never into #game-panel. *)
               let () = Game_lib.on_repaint refresh
 
               let () = refresh ()
@@ -519,12 +484,7 @@ The function above creates the new board. The provided plumbing below connects i
 :::provided
 ```ocaml
 
-          (* Composes with count_live_neighbors (Problem 2, above) the same
-          way next_generation composes with next_cell_state -- used only
-          once a rule preset button is pressed (see the setup cell's
-          custom_rule_ref), which needs the general STUDENT rule function
-          from further down the page instead of the hardcoded
-          next_cell_state this cell already has. *)
+          (* Composes with count_live_neighbors (Problem 2, above) the same way next_generation composes with next_cell_state -- used only once a rule preset button is pressed (see the setup cell's custom_rule_ref), which needs the general STUDENT rule function from further down the page instead of the hardcoded next_cell_state this cell already has. *)
           let next_generation_general (birth, survive) g =
           List.init rows (fun r ->
           List.init cols (fun c ->
@@ -553,8 +513,7 @@ The function above creates the new board. The provided plumbing below connects i
           session := { !session with running = false };
           sync_clock ())
           else if stalled && s.running then (
-          (* A still life: nothing will ever change again, so stop rather than
-          burn a tick every 200ms redrawing an identical board. *)
+          (* A still life: nothing will ever change again, so stop rather than burn a tick every 200ms redrawing an identical board. *)
           beep 330 120;
           session := { !session with running = false };
           sync_clock ())
@@ -577,9 +536,7 @@ A board where each cell is alive with roughly probability `p`, somewhere from 0.
 let random_grid p =
           failwith "not implemented"
 
-          (* PROVIDED -- registers your function with the board (see the setup
-          cell's random_grid_ref) so Random and the r/R key pick it up on the
-          very next press. *)
+          (* PROVIDED -- registers your function with the board (see the setup cell's random_grid_ref) so Random and the r/R key pick it up on the very next press. *)
           let () = random_grid_ref := random_grid
 ```
 
@@ -615,10 +572,7 @@ Conway's rules ("a live cell survives on 2 or 3 neighbors, a dead cell is born o
 let parse_rule birth survive =
           failwith "not implemented"
 
-          (* PROVIDED -- registers your function with the board (see the setup
-          cell's parse_rule_ref); the rule preset buttons and the Birth/Survive
-          text boxes beside the board call through this the moment you press or
-          edit one, no re-run needed. *)
+          (* PROVIDED -- registers your function with the board (see the setup cell's parse_rule_ref); the rule preset buttons and the Birth/Survive text boxes beside the board call through this the moment you press or edit one, no re-run needed. *)
           let () = parse_rule_ref := parse_rule
 ```
 

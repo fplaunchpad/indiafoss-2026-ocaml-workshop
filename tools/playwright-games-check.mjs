@@ -64,6 +64,18 @@ try {
         .every(cell => cell.shadowRoot?.querySelector('.run_btn button'));
     }, null, { timeout: 90_000 });
 
+    const sidebarLinks = await page.locator('.sidebar-nav a').allTextContents();
+    await page.evaluate(() => {
+      localStorage.removeItem('indiafoss-ocaml-sidebar-hidden');
+      document.body.classList.remove('sidebar-hidden');
+    });
+    await page.locator('.sidebar-collapse').click();
+    const sidebarClosed = await page.locator('body').evaluate(body =>
+      body.classList.contains('sidebar-hidden'));
+    await page.locator('.sidebar-collapse').click();
+    const sidebarReopened = await page.locator('body').evaluate(body =>
+      !body.classList.contains('sidebar-hidden'));
+
     const cellCount = await page.locator('x-ocaml').count();
     const credit = await page.locator('.chapter').first().textContent();
     const home = await page.locator('.home-link').getAttribute('href');
@@ -114,6 +126,9 @@ try {
 
     const failures = [
       [cellCount > 1, `expected multiple OCaml cells, found ${cellCount}`],
+      [sidebarLinks.length === 6,
+        `workshop sidebar has ${sidebarLinks.length} links instead of 6`],
+      [sidebarClosed && sidebarReopened, 'sidebar toggle did not close and reopen'],
       [credit?.includes('Smayan Agarwal'), 'contributor credit is missing'],
       [home === 'index.html', `workshop-home link is ${home}`],
       [pageText.includes('45-minute lab:'), 'game-lab scope is missing'],
@@ -194,6 +209,17 @@ try {
         .every(cell => cell.shadowRoot?.querySelector('.run_btn button'));
     }, null, { timeout: 90_000 });
     const cellCount = await page.locator('x-ocaml').count();
+    const sidebarLinks = await page.locator('.sidebar-nav a').allTextContents();
+    await page.evaluate(() => {
+      localStorage.removeItem('indiafoss-ocaml-sidebar-hidden');
+      document.body.classList.remove('sidebar-hidden');
+    });
+    await page.locator('.sidebar-collapse').click();
+    const sidebarClosed = await page.locator('body').evaluate(body =>
+      body.classList.contains('sidebar-hidden'));
+    await page.locator('.sidebar-collapse').click();
+    const sidebarReopened = await page.locator('body').evaluate(body =>
+      !body.classList.contains('sidebar-hidden'));
 
     // Cell 0 is the setup cell, cell 1 binds `c`, cell 2 is `show [ c ]`.
     // Running cell 2 also evaluates its predecessors.
@@ -212,6 +238,9 @@ try {
           .map(cell => cell.shadowRoot?.innerText || ''));
       throw new Error(`Joy did not render an SVG:\n${JSON.stringify(diagnostics)}\n${errors.join('\n')}`,
         { cause: error });
+    }
+    if (sidebarLinks.length !== 6 || !sidebarClosed || !sidebarReopened) {
+      throw new Error('Joy: workshop sidebar is incomplete or its toggle failed');
     }
     if (errors.length) throw new Error(`Joy:\n${errors.join('\n')}`);
     console.log(`Joy: ${cellCount} cells upgraded; SVG rendered`);

@@ -32,6 +32,8 @@ module Game_lib = struct
 end
 """
 
+REPO = Path(__file__).resolve().parent.parent
+
 
 @dataclass
 class Cell:
@@ -192,7 +194,27 @@ def run(command: list[str], *, cwd: Path, description: str) -> None:
     raise RuntimeError(f"{description} failed:\n{details}")
 
 
-def check_page(path: Path) -> tuple[int, int]:
+def find_ocamlc() -> str:
+    """Resolve the switch compiler before entering the temporary directory.
+
+    A repository-local opam switch is discoverable from the checkout but not
+    from the temporary compilation directory used below (notably in CI).
+    """
+    completed = subprocess.run(
+        ["opam", "exec", "--", "which", "ocamlc"],
+        cwd=REPO,
+        text=True,
+        capture_output=True,
+    )
+    if completed.returncode != 0 or not completed.stdout.strip():
+        details = "\n".join(
+            part for part in (completed.stdout, completed.stderr) if part.strip()
+        )
+        raise RuntimeError(f"could not resolve ocamlc from the project switch:\n{details}")
+    return completed.stdout.strip()
+
+
+def check_page(path: Path, ocamlc: str) -> tuple[int, int]:
     cells = parse_cells(path)
     solutions = solution_map(path, cells)
 
@@ -204,12 +226,12 @@ def check_page(path: Path) -> tuple[int, int]:
         reference.write_text(reference_program(path, cells, solutions), encoding="utf-8")
 
         run(
-            ["opam", "exec", "--", "ocamlc", "-c", student.name],
+            [ocamlc, "-c", student.name],
             cwd=temp,
             description=f"{path}: authored-cell compilation",
         )
         run(
-            ["opam", "exec", "--", "ocamlc", "-o", "reference-check", reference.name],
+            [ocamlc, "-o", "reference-check", reference.name],
             cwd=temp,
             description=f"{path}: reference-solution compilation",
         )
@@ -227,9 +249,14 @@ def main() -> int:
     parser.add_argument("pages", nargs="+", type=Path)
     args = parser.parse_args()
 
+    try:
+        ocamlc = find_ocamlc()
+    except RuntimeError as error:
+        parser.exit(1, f"game-cell-check: {error}\n")
+
     for page in args.pages:
         try:
-            cell_count, quiz_count = check_page(page)
+            cell_count, quiz_count = check_page(page, ocamlc)
         except (OSError, ValueError, RuntimeError) as error:
             parser.exit(1, f"game-cell-check: {error}\n")
         print(f"{page}: {cell_count} cells compiled; {quiz_count} reference quizzes passed")

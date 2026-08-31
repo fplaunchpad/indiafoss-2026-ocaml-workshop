@@ -63,9 +63,7 @@ Open the provided game code below and press **Run** to render the board. You nee
 
           let string_of_cell = function Empty -> "." | Taken X -> "X" | Taken O -> "O"
 
-          (* Turns a board into a <table>, one <td> per cell, each tagged
-          with a data-xo-pos attribute recording its index 0-8 -- the one thing a
-          click needs to carry back. *)
+          (* Turns a board into a <table>, one <td> per cell, each tagged with a data-xo-pos attribute recording its index 0-8 -- the one thing a click needs to carry back. *)
           let render_board b =
           let cell_html i =
           Printf.sprintf "<td data-xo-pos=\"%d\">%s</td>" i (string_of_cell (get b i))
@@ -85,46 +83,21 @@ Open the provided game code below and press **Run** to render the board. You nee
 
           let state = { board = empty_board (); hint = None }
 
-          (* Forward references to functions this cell needs but that don't exist
-          yet -- current_player, no_empty_cells_left, winner, is_over, and
-          best_move all live further down the page. Each ref starts as a stub;
-          the cell that defines the real function reassigns it as its own last
-          line. Every call below goes through `!xxx_ref`, so it always reads
-          whatever is CURRENTLY assigned -- no re-run of this cell is ever
-          needed to pick up a later solve. current_player_ref must come first:
-          apply_move (just below) reads it. *)
+          (* Forward references to functions this cell needs but that don't exist yet -- current_player, no_empty_cells_left, winner, is_over, and best_move all live further down the page. Each ref starts as a stub; the cell that defines the real function reassigns it as its own last line. Every call below goes through `!xxx_ref`, so it always reads whatever is CURRENTLY assigned -- no re-run of this cell is ever needed to pick up a later solve. current_player_ref must come first: apply_move (just below) reads it. *)
           let current_player_ref : (board -> player) ref = ref (fun _ -> X)
           let no_empty_cells_left_ref : (board -> bool) ref = ref (fun _ -> false)
           let winner_ref : (board -> player option) ref = ref (fun _ -> None)
           let is_over_ref : (board -> bool) ref = ref (fun _ -> false)
           let best_move_ref : (board -> int option) ref = ref (fun _ -> None)
 
-          (* PROVIDED -- not a problem: placing a mark is plumbing the game panel
-          itself needs to function at all (every click routes through this), not
-          a graded exercise. Unlike the other five functions above, it's a real
-          definition right here, not a ref -- there's no "before it's solved"
-          state for the board to fall back to. Reads current_player through its
-          ref since current_player genuinely IS still a problem (below). *)
+          (* PROVIDED -- not a problem: placing a mark is plumbing the game panel itself needs to function at all (every click routes through this), not a graded exercise. Unlike the other five functions above, it's a real definition right here, not a ref -- there's no "before it's solved" state for the board to fall back to. Reads current_player through its ref since current_player genuinely IS still a problem (below). *)
           let apply_move b pos =
           if get b pos <> Empty then None
             else
             let p = !current_player_ref b in
             Some (set b pos (Taken p))
 
-            (* Checks winner_ref, no_empty_cells_left_ref, and is_over_ref directly
-            against the CURRENT board on every call, rather than caching any of
-            them in game_state -- a cached "is the game over" flag would only get
-            set as a side effect of the click that filled the last square, so
-            solving is_over any time after that (with no further click to
-            re-trigger the check) would leave the caption stuck on "No empty cells
-            left" forever, never catching up to "Draw!". Recomputing fresh means
-            every caption upgrades the instant its own function is solved, no
-            matter when that happens relative to the moves already on the board.
-            "X wins!" shows up the moment winner is solved and a line is complete;
-            "No empty cells left" shows up the moment no_empty_cells_left is
-            solved and the board is full; both stand in before is_over exists to
-            confirm the game has actually ended, at which point a drawn board's
-            caption upgrades to "Draw!". *)
+            (* Checks winner_ref, no_empty_cells_left_ref, and is_over_ref directly against the CURRENT board on every call, rather than caching any of them in game_state -- a cached "is the game over" flag would only get set as a side effect of the click that filled the last square, so solving is_over any time after that (with no further click to re-trigger the check) would leave the caption stuck on "No empty cells left" forever, never catching up to "Draw!". Recomputing fresh means every caption upgrades the instant its own function is solved, no matter when that happens relative to the moves already on the board. "X wins!" shows up the moment winner is solved and a line is complete; "No empty cells left" shows up the moment no_empty_cells_left is solved and the board is full; both stand in before is_over exists to confirm the game has actually ended, at which point a drawn board's caption upgrades to "Draw!". *)
             let game_over () = !is_over_ref state.board
 
             let status_line () =
@@ -180,9 +153,7 @@ Open the provided game code below and press **Run** to render the board. You nee
               | Some n when n >= 1 && n <= 9 -> place (n - 1)
                 | _ -> ())
 
-                (* Repaints whenever some OTHER cell (current_player, winner, ...) finishes
-                running -- see src/game_host.ml's [repaint_all]. Without this, solving a
-                problem only became visible on the board after the next click. *)
+                (* Repaints whenever some OTHER cell (current_player, winner, ...) finishes running -- see src/game_host.ml's [repaint_all]. Without this, solving a problem only became visible on the board after the next click. *)
                 let () = Game_lib.on_repaint refresh
 
                 let () = refresh ()
