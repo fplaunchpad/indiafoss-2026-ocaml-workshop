@@ -26,6 +26,7 @@ done
 
 node tools/playwright-check.mjs "http://localhost:$PORT/_site/test/smoke.html"
 node tools/playwright-overflow-check.mjs "http://localhost:$PORT/_site"
+node tools/playwright-chapter-layout-check.mjs "http://localhost:$PORT/_site"
 node tools/playwright-games-check.mjs "http://localhost:$PORT/_site"
 
 printf 'All workshop checks passed.\n'

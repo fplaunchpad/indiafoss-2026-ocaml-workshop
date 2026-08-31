@@ -680,8 +680,15 @@ details.solution > *:last-child { margin-bottom: 0; }
 .toc {
   position: fixed;
   top: 3.6rem;
-  right: 1rem;
+  /* Keep the outline visually attached to the 720px article instead of
+     pinning it to the far edge of an ultrawide viewport. With the workshop
+     sidebar open, the article begins just after --sidebar-width; when that
+     sidebar is collapsed, the article recentres and the override below
+     follows it. */
+  left: calc(var(--sidebar-width) + 2.5rem + var(--width) + 2rem + 1.25rem);
+  right: auto;
   width: 220px;
+  box-sizing: border-box;
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
   padding: 0.6rem 0.75rem 0.8rem;
@@ -693,6 +700,9 @@ details.solution > *:last-child { margin-bottom: 0; }
   font-size: 0.82rem;
   line-height: 1.4;
   z-index: 5;
+}
+body.sidebar-hidden .toc {
+  left: calc(50% + (var(--width) / 2) + 1rem + 1.25rem);
 }
 .toc-head {
   display: flex;
@@ -752,4 +762,4 @@ details.solution > *:last-child { margin-bottom: 0; }
 /* Visibility: chapter-mode, wide screens, screen (not print) only. */
 body.mode-slides .toc { display: none; }
 @media print { .toc { display: none; } }
-@media (max-width: 1279px) { .toc { display: none; } }
+@media (max-width: 1319px) { .toc { display: none; } }
