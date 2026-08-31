@@ -19,3 +19,11 @@ Source: `content/02-data-types.md`
 Structures, file modules, signatures, abstract types, and interface files.
 
 Source: `content/03-modules.md`
+
+## Extra: Joy sandbox
+
+Open-ended creative-coding page for the game lab, adapted from
+[ocaml-joy](https://github.com/Sudha247/ocaml-joy). Not covered in the
+session.
+
+Source: `content/joy.md`

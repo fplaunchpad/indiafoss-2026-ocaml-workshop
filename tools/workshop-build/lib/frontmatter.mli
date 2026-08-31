@@ -9,6 +9,7 @@ type t = {
   activity_question : string option;
   think_about_this : string option;
   reading : reading list;
+  toplevel_load : string option;
 }
 
 val empty : t

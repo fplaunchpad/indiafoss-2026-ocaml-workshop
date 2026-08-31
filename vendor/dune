@@ -1,0 +1,3 @@
+; Everything under vendor/ is third-party code: build it only when a
+; target depends on it, and do not enforce our warning settings on it.
+(vendored_dirs *)

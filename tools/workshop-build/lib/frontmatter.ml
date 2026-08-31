@@ -15,6 +15,7 @@
      reading:
        - title: "Foo"
          url: https://example.com
+     toplevel_load: assets/x-ocaml/joy_core.js
      ---
 
    Strings may be bare or double-quoted; lists may be inline ([a, b, c])
@@ -32,6 +33,10 @@ type t = {
   activity_question : string option;
   think_about_this : string option;
   reading : reading list;
+  toplevel_load : string option;
+      (* Extra .js toplevel payload (repo-relative path) the x-ocaml
+         runtime should load via its [src-load] attribute, e.g. the Joy
+         library on the creative-coding page. *)
 }
 
 let empty =
@@ -44,6 +49,7 @@ let empty =
     activity_question = None;
     think_about_this = None;
     reading = [];
+    toplevel_load = None;
   }
 
 let strip_quotes s =
@@ -138,6 +144,8 @@ let parse_value t key value rest_lines =
       ({ t with activity_question = Some (strip_quotes v_trimmed) }, rest_lines)
   | "think_about_this" ->
       ({ t with think_about_this = Some (strip_quotes v_trimmed) }, rest_lines)
+  | "toplevel_load" ->
+      ({ t with toplevel_load = Some (strip_quotes v_trimmed) }, rest_lines)
   | "reading" ->
       (* Collect block-style entries until we hit an unindented line. *)
       let block, rest =
@@ -159,7 +167,7 @@ let parse_value t key value rest_lines =
         (Printf.sprintf
            "frontmatter: unknown key %S (known: title, part, \
             duration_target_min, concepts, keywords, activity_question, \
-            think_about_this, reading)"
+            think_about_this, reading, toplevel_load)"
            key)
 
 let parse_lines lines =

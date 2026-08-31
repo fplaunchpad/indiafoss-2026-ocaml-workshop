@@ -12,7 +12,10 @@ Workshop prose and exercises are distributed under CC BY-NC-SA 4.0.
 
 ## Bundled software
 
-- `assets/x-ocaml/` and `vendor/x-ocaml/`: x-ocaml; ISC license.
+- `assets/x-ocaml/x-ocaml.js`, `assets/x-ocaml/x-ocaml.worker.js` and
+  `vendor/x-ocaml/`: x-ocaml; ISC license.
+- `vendor/joy/` and `assets/x-ocaml/joy_core.js`: ocaml-joy; MIT license.
+  See `vendor/joy/LICENSE`.
 - `assets/reveal/`: reveal.js; MIT license.
 - `assets/katex/`: KaTeX; MIT license. See `assets/katex/LICENSE`.
 - `tools/workshop-build/`: project-specific builder; ISC license.

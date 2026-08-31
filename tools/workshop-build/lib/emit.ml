@@ -56,6 +56,17 @@ let head ~asset_root ~(fm : Frontmatter.t) =
   let katex_css_v = bundle_hash "assets/katex/katex.min.css" in
   let katex_js_v = bundle_hash "assets/katex/katex.min.js" in
   let katex_auto_v = bundle_hash "assets/katex/contrib/auto-render.min.js" in
+  (* An optional extra toplevel payload (frontmatter [toplevel_load])
+     rides on the runtime's [src-load] attribute; the worker loads it
+     before running any cell, so library modules (e.g. Joy) are already
+     available. Same asset_root prefix and cache-buster as the bundle. *)
+  let src_load =
+    match fm.toplevel_load with
+    | None -> ""
+    | Some path ->
+        Printf.sprintf "\n    src-load=\"%s/%s?v=%s\"" asset_root path
+          (bundle_hash path)
+  in
   Printf.sprintf
     {|<!doctype html>
 <html lang="en">
@@ -95,13 +106,13 @@ let head ~asset_root ~(fm : Frontmatter.t) =
   </script>
   <script async
     src="%s/assets/x-ocaml/x-ocaml.js?v=%s"
-    src-worker="%s/assets/x-ocaml/x-ocaml.worker.js?v=%s"
+    src-worker="%s/assets/x-ocaml/x-ocaml.worker.js?v=%s"%s
     x-ocamlformat="margin=60"></script>
 </head>|}
     (Parse.html_escape (if fm.title = "" then "(untitled workshop part)" else fm.title))
     asset_root asset_root asset_root chapter_css_v asset_root slides_css_v
     asset_root katex_css_v asset_root katex_js_v asset_root katex_auto_v
-    asset_root main_v asset_root worker_v
+    asset_root main_v asset_root worker_v src_load
 
 let header_bar ~(fm : Frontmatter.t) ~has_slides =
   let lecture_id =

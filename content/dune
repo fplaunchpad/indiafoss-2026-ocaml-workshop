@@ -5,4 +5,8 @@
  (files
   01-basics.md
   02-data-types.md
-  03-modules.md))
+  03-modules.md
+  joy.md)
+ ; joy.md's cells use the vendored Joy library plus a stub for the
+ ; X_ocaml_lib module the browser runtime provides.
+ (libraries joy_core x_ocaml_lib))

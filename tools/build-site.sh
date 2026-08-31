@@ -14,7 +14,7 @@ COPY_ASSETS="${COPY_ASSETS:-0}"
 if [ "$#" -gt 0 ]; then
   files=("$@")
 else
-  files=("$REPO_ROOT"/content/[0-9][0-9]-*.md)
+  files=("$REPO_ROOT"/content/[0-9][0-9]-*.md "$REPO_ROOT/content/joy.md")
 fi
 
 mkdir -p "$REPO_ROOT/_site"
@@ -106,7 +106,9 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       <h2>Final 45-minute game lab</h2>
       <p>Choose one game. Tic-Tac-Toe is the recommended starting point;
         Game of Life is the challenge path. Complete the numbered problems
-        first—the stretch problems are optional.</p>
+        first—the stretch problems are optional. Joy is a third, open-ended
+        option: a creative-coding sandbox that the session does not cover,
+        for anyone who would rather draw than build a game.</p>
       <p><strong>Open your chosen game during the briefing. Your answers are
         saved locally in this browser as you type.</strong></p>
       <ul class="parts games">
@@ -117,6 +119,10 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
         <li><a href="games/tictactoe_partial_list.html"><span class="part-no">Recommended</span><span>
           <span class="part-title">Tic-Tac-Toe</span>
           <span class="part-summary">Build a playable game step by step</span>
+        </span></a></li>
+        <li><a href="joy.html"><span class="part-no">Sandbox</span><span>
+          <span class="part-title">Joy: Creative Coding</span>
+          <span class="part-summary">Draw with code; open-ended, nothing to complete</span>
         </span></a></li>
       </ul>
     </section>

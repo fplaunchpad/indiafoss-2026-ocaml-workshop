@@ -156,7 +156,7 @@ def game_links(html_path: str):
 def main():
     md_files = sorted(
         f for f in os.listdir(CONTENT)
-        if re.match(r"\d\d-.*\.md$", f)
+        if re.match(r"(\d\d-.*|joy)\.md$", f)
     )
     ids_by_page = {f: heading_ids(os.path.join(CONTENT, f)) for f in md_files}
     pages = {f[:-3] + ".html" for f in md_files}

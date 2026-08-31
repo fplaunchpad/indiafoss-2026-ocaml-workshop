@@ -32,7 +32,8 @@ try {
       || !landingText.includes('saved locally in this browser')
       || partLabels.join(',') !== '1,2,3'
       || !gameLinks.includes('games/life_partial_list.html')
-      || !gameLinks.includes('games/tictactoe_partial_list.html')) {
+      || !gameLinks.includes('games/tictactoe_partial_list.html')
+      || !gameLinks.includes('joy.html')) {
     throw new Error('landing page is missing the game-lab guidance or links');
   }
   if (!await gameCardTextDoesNotOverlap()) {
@@ -132,6 +133,52 @@ try {
       localStorage.removeItem(`indiafoss-ocaml-game:${document.body.dataset.gameId}`);
     });
     console.log(`${name}: ${cellCount} cells upgraded; game rendered; work survived reload`);
+    await page.close();
+  }
+
+  // The Joy sandbox page: chapter-built, no problems or persistence.
+  // Check that its cells upgrade, that the src-load Joy payload is
+  // reachable, and that running a `show` cell renders an SVG.
+  {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('console', message => {
+      if (message.type() === 'error') errors.push(`console: ${message.text()}`);
+    });
+    page.on('pageerror', error => errors.push(`page: ${error.message}`));
+    page.on('requestfailed', request =>
+      errors.push(`request: ${request.url()} — ${request.failure()?.errorText}`));
+
+    await page.goto(`${ROOT}/joy.html`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!customElements.get('x-ocaml'), null,
+      { timeout: 90_000 });
+    await page.waitForFunction(() => {
+      const cells = Array.from(document.querySelectorAll('x-ocaml'));
+      return cells.length > 1 && cells.slice(0, 2)
+        .every(cell => cell.shadowRoot?.querySelector('.run_btn button'));
+    }, null, { timeout: 90_000 });
+    const cellCount = await page.locator('x-ocaml').count();
+
+    // Cell 0 is the setup cell, cell 1 binds `c`, cell 2 is `show [ c ]`.
+    // Running cell 2 also evaluates its predecessors.
+    await page.evaluate(() => {
+      document.querySelectorAll('x-ocaml')[2]
+        .shadowRoot.querySelector('.run_btn button').click();
+    });
+    try {
+      await page.waitForFunction(() =>
+        Array.from(document.querySelectorAll('x-ocaml')).some(cell =>
+          cell.shadowRoot?.querySelector('svg') || cell.querySelector('svg')),
+        null, { timeout: 90_000 });
+    } catch (error) {
+      const diagnostics = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('x-ocaml')).slice(0, 3)
+          .map(cell => cell.shadowRoot?.innerText || ''));
+      throw new Error(`Joy did not render an SVG:\n${JSON.stringify(diagnostics)}\n${errors.join('\n')}`,
+        { cause: error });
+    }
+    if (errors.length) throw new Error(`Joy:\n${errors.join('\n')}`);
+    console.log(`Joy: ${cellCount} cells upgraded; SVG rendered`);
     await page.close();
   }
 } finally {

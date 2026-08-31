@@ -1,0 +1,7 @@
+; Stand-in for the X_ocaml_lib module that the x-ocaml browser runtime
+; provides to code running in a cell. content/joy.md calls
+; X_ocaml_lib.output_html to render SVG below a cell; under ocaml-mdx
+; validation there is no page to render into, so this stub accepts the
+; HTML and drops it.
+(library
+ (name x_ocaml_lib))

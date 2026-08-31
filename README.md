@@ -15,6 +15,8 @@ by [Smayan Agarwal](https://github.com/SmayanAgarwal) in
 [PR #3](https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3).
 The three-hour session reserves its final 45 minutes for participants to choose
 and work on one of these games; stretch problems can be continued afterward.
+A third, open-ended lab option is a [Joy](https://github.com/Sudha247/ocaml-joy)
+creative-coding sandbox (`content/joy.md`); the session does not cover it.
 
 Every OCaml block is editable and runnable in the browser. Each page can
 also switch into a reveal.js slide deck for the live session.
@@ -46,7 +48,7 @@ renders the site, and runs the browser smoke checks.
 
 ## Project layout
 
-- `content/` — the three workshop parts
+- `content/` — the three workshop parts and the Joy sandbox page
 - `tools/workshop-build/` — Markdown-to-HTML builder
 - `assets/x-ocaml/` — prebuilt in-browser OCaml runtime
 - `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
