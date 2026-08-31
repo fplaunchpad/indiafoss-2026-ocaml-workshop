@@ -28,6 +28,11 @@ try {
       return label.right <= title.left || title.right <= label.left
         || label.bottom <= title.top || title.bottom <= label.top;
     }));
+  const gameCardTitlesAlign = async () => landing.locator('.games .part-title')
+    .evaluateAll(titles => {
+      const lefts = titles.map(title => title.getBoundingClientRect().left);
+      return lefts.length === 3 && Math.max(...lefts) - Math.min(...lefts) <= 1;
+    });
   if (!landingText.includes('Final 45-minute game lab')
       || !landingText.includes('saved locally in this browser')
       || partLabels.join(',') !== '1,2,3'
@@ -38,6 +43,9 @@ try {
   }
   if (!await gameCardTextDoesNotOverlap()) {
     throw new Error('game-card label overlaps its title at desktop width');
+  }
+  if (!await gameCardTitlesAlign()) {
+    throw new Error('game-card titles do not share a desktop alignment');
   }
   await landing.setViewportSize({ width: 390, height: 800 });
   if (!await gameCardTextDoesNotOverlap()) {

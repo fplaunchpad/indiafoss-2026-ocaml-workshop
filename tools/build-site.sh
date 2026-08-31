@@ -72,7 +72,7 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
     .part-summary { display: block; margin-top: .15rem; color: var(--text);
       font-size: .9rem; }
     .games { margin-bottom: 2.5rem; }
-    .games a { grid-template-columns: minmax(4.5rem, max-content) minmax(0, 1fr); }
+    .games a { grid-template-columns: 9.5rem minmax(0, 1fr); }
     @media (max-width: 480px) {
       .games a { grid-template-columns: 1fr; gap: .25rem; }
     }
