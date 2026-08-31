@@ -26,4 +26,4 @@ Open-ended creative-coding page for the game lab, adapted from
 [ocaml-joy](https://github.com/Sudha247/ocaml-joy). Not covered in the
 session.
 
-Source: `content/joy.md`
+Source: `content/06-joy.md`

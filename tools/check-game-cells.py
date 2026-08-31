@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract and validate OCaml cells embedded in the standalone game pages."""
+"""Extract and validate OCaml cells in the generated game-lab pages."""
 
 from __future__ import annotations
 

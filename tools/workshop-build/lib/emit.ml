@@ -45,14 +45,24 @@ let head ~asset_root ~(fm : Frontmatter.t) =
      callers pass [""] and the leading slash comes from each href.
      For previewing inside a subdirectory (e.g. when assets live under
      [/_site/]), the caller can pass that prefix instead. *)
-  let main_v = bundle_hash "assets/x-ocaml/x-ocaml.js" in
-  let worker_v = bundle_hash "assets/x-ocaml/x-ocaml.worker.js" in
+  let main_path, worker_path =
+    if fm.game then ("games/x-ocaml.js", "games/x-ocaml.worker.js")
+    else ("assets/x-ocaml/x-ocaml.js", "assets/x-ocaml/x-ocaml.worker.js")
+  in
+  let main_v = bundle_hash main_path in
+  let worker_v = bundle_hash worker_path in
   (* Cache-bust the local stylesheets the same way as the bundle, so an
      edited chapter.css / slides.css invalidates the browser's cached
      copy on the next build (these are served without far-future caching
      but browsers still hold a copy across visits). *)
   let chapter_css_v = bundle_hash "assets/css/chapter.css" in
   let slides_css_v = bundle_hash "assets/css/slides.css" in
+  let game_css =
+    if fm.game then
+      Printf.sprintf "\n  <link rel=\"stylesheet\" href=\"%s/assets/css/game-chapter.css?v=%s\">"
+        asset_root (bundle_hash "assets/css/game-chapter.css")
+    else ""
+  in
   let katex_css_v = bundle_hash "assets/katex/katex.min.css" in
   let katex_js_v = bundle_hash "assets/katex/katex.min.js" in
   let katex_auto_v = bundle_hash "assets/katex/contrib/auto-render.min.js" in
@@ -77,7 +87,7 @@ let head ~asset_root ~(fm : Frontmatter.t) =
   <link rel="stylesheet" href="%s/assets/reveal/dist/reveal.css">
   <link rel="stylesheet" href="%s/assets/reveal/dist/theme/white.css" id="reveal-theme">
   <link rel="stylesheet" href="%s/assets/css/chapter.css?v=%s">
-  <link rel="stylesheet" href="%s/assets/css/slides.css?v=%s">
+  <link rel="stylesheet" href="%s/assets/css/slides.css?v=%s">%s
   <!-- KaTeX for inline / display math (vendored 0.16.10 under
        assets/katex/, so math also renders offline, e.g. in the
        a local workshop environment). Auto-render walks the DOM after load and
@@ -105,14 +115,14 @@ let head ~asset_root ~(fm : Frontmatter.t) =
     }
   </script>
   <script async
-    src="%s/assets/x-ocaml/x-ocaml.js?v=%s"
-    src-worker="%s/assets/x-ocaml/x-ocaml.worker.js?v=%s"%s
+    src="%s/%s?v=%s"
+    src-worker="%s/%s?v=%s"%s
     x-ocamlformat="margin=60"></script>
 </head>|}
     (Parse.html_escape (if fm.title = "" then "(untitled workshop part)" else fm.title))
-    asset_root asset_root asset_root chapter_css_v asset_root slides_css_v
+    asset_root asset_root asset_root chapter_css_v asset_root slides_css_v game_css
     asset_root katex_css_v asset_root katex_js_v asset_root katex_auto_v
-    asset_root main_v asset_root worker_v src_load
+    asset_root main_path main_v asset_root worker_path worker_v src_load
 
 let header_bar ~(fm : Frontmatter.t) ~has_slides =
   let lecture_id =
@@ -1285,15 +1295,26 @@ let render_sidebar ~(manifest : Manifest.t option) =
       Buffer.add_string buf
         "    <div class=\"sidebar-title\">Workshop outline</div>\n";
       Buffer.add_string buf "    <ul class=\"sidebar-parts\">\n";
+      let in_lab = ref false in
       List.iter
         (fun (entry : Manifest.entry) ->
+          (match entry.part with
+           | None when not !in_lab ->
+               in_lab := true;
+               Buffer.add_string buf
+                 "    </ul>\n    <div class=\"sidebar-title sidebar-group\">Game lab</div>\n    <ul class=\"sidebar-parts sidebar-labs\">\n"
+           | _ -> ());
           let current =
             if entry.slug = m.current_slug then " class=\"current\"" else ""
           in
           Buffer.add_string buf
             (Printf.sprintf
-               "      <li%s><a href=\"%s.html\"><span class=\"part-no\">%d</span> %s</a></li>\n"
-               current entry.slug entry.part (Parse.html_escape entry.title)))
+               "      <li%s><a href=\"%s.html\">%s%s</a></li>\n"
+               current entry.slug
+               (match entry.part with
+                | Some n -> Printf.sprintf "<span class=\"part-no\">%d</span> " n
+                | None -> "")
+               (Parse.html_escape entry.title)))
         m.parts;
       Buffer.add_string buf "    </ul>\n";
       Buffer.add_string buf "  </nav>\n";
@@ -1305,9 +1326,8 @@ let render_prev_next ~(manifest : Manifest.t option) =
   | None -> ""
   | Some m ->
       let prev, next = Manifest.neighbors m in
-      (* Previous/next labels use the workshop part number. *)
       let label_of (e : Manifest.entry) =
-        Printf.sprintf "Part %d" e.part
+        match e.part with Some n -> Printf.sprintf "%d" n | None -> "Game lab"
       in
       let buf = Buffer.create 256 in
       Buffer.add_string buf
@@ -1349,16 +1369,24 @@ let body_has_slides html_body =
 let render_body ~html_body ~(fm : Frontmatter.t) ~manifest =
   let has_slides = body_has_slides html_body in
   let buf = Buffer.create (String.length html_body + 2048) in
-  Buffer.add_string buf "<body class=\"mode-chapter\">\n";
+  Buffer.add_string buf
+    (if fm.game then "<body class=\"mode-chapter game-chapter\">\n"
+     else "<body class=\"mode-chapter\">\n");
   Buffer.add_string buf (header_bar ~fm ~has_slides);
   Buffer.add_string buf "\n";
   Buffer.add_string buf (render_sidebar ~manifest);
   (* In chapter mode the article holds everything inline. In slide mode
      a Reveal.js wrapper sibling becomes visible; the runtime script
      reparents the section[data-slide] elements into it on activation. *)
+  if fm.game then Buffer.add_string buf "<main class=\"game-chapter-layout\">\n";
   Buffer.add_string buf "<article class=\"chapter\">\n";
   Buffer.add_string buf html_body;
   Buffer.add_string buf "\n</article>\n";
+  if fm.game then begin
+    Buffer.add_string buf
+      "<aside class=\"game-board chapter-only\" aria-label=\"Game board\"><h2>Board</h2><div id=\"game-panel\"></div></aside>\n";
+    Buffer.add_string buf "</main>\n"
+  end;
   Buffer.add_string buf (render_prev_next ~manifest);
   Buffer.add_string buf
     "<div class=\"reveal\" aria-hidden=\"true\"><div class=\"slides\"></div></div>\n";

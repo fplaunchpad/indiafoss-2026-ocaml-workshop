@@ -1,6 +1,6 @@
 ; Vendored from https://github.com/Sudha247/ocaml-joy (svg branch),
 ; MIT license (see ../LICENSE). Built here so ocaml-mdx can validate
-; the Joy code cells in content/joy.md against the same library that
+; the Joy code cells in content/06-joy.md against the same library that
 ; assets/x-ocaml/joy_core.js provides in the browser (tools/build-joy.sh
 ; compiles that payload from these very sources). Update with
 ; tools/update-joy.sh.

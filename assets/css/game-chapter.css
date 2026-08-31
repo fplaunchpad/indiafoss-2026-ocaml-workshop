@@ -1,0 +1,107 @@
+/* Game labs use the chapter shell, with a nearby live board and slightly
+   denser type for a code-heavy 45-minute exercise. */
+.game-chapter {
+  font-size: 16px;
+}
+
+.game-chapter .toc {
+  display: none;
+}
+
+.game-chapter-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) 300px;
+  gap: 2rem;
+  align-items: start;
+  width: min(1052px, calc(100vw - var(--sidebar-width) - 5rem));
+  margin: 2rem auto 0 calc(var(--sidebar-width) + 2rem);
+}
+
+body.sidebar-hidden .game-chapter-layout {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.game-chapter-layout .chapter {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The normal chapter is itself offset around the workshop outline. Here the
+   grid owns that offset, so the article must not apply it a second time. */
+body.game-chapter.mode-chapter:not(.sidebar-hidden) .game-chapter-layout .chapter {
+  margin: 0;
+}
+
+.game-board {
+  position: sticky;
+  top: calc(var(--header-height) + 1.5rem);
+  min-height: 9rem;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.game-board h2 {
+  margin: 0 0 .75rem;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.game-chapter details.provided {
+  margin: 1.25rem 0;
+  border-left: 3px solid var(--rule);
+  background: var(--code-bg);
+}
+
+.game-chapter details.provided > summary {
+  cursor: pointer;
+  padding: .65rem .85rem;
+  color: var(--muted);
+  font: 600 .85rem/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.game-chapter details.provided > :not(summary) {
+  margin-left: .85rem;
+  margin-right: .85rem;
+}
+
+#game-panel table { border-collapse: collapse; margin: .5rem auto; }
+#game-panel td { padding: 0; text-align: center; }
+#game-panel button { font: inherit; cursor: pointer; }
+#game-panel p { margin: .5rem 0; }
+#game-panel .controls { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }
+
+table.ttt td {
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid var(--rule);
+  font-size: 1.75rem;
+}
+table.ttt button { width: 100%; height: 100%; border: 0; background: transparent; }
+
+table.life td {
+  width: .7rem;
+  height: .7rem;
+  border: 1px solid #ddd;
+}
+table.life td.alive { background: var(--accent); }
+table.life button { width: 100%; height: 100%; padding: 0; border: 0; background: transparent; }
+
+@media (max-width: 1399px) {
+  .game-chapter-layout {
+    grid-template-columns: minmax(0, 720px);
+    width: min(720px, calc(100vw - var(--sidebar-width) - 4rem));
+  }
+  .game-board { position: static; grid-row: 1; }
+}
+
+@media (max-width: 760px) {
+  .game-chapter-layout {
+    width: auto;
+    margin: 1.5rem 1rem;
+  }
+}

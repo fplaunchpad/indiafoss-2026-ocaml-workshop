@@ -1,7 +1,14 @@
 ; Stand-in for the X_ocaml_lib module that the x-ocaml browser runtime
-; provides to code running in a cell. content/joy.md calls
+; provides to code running in a cell. content/06-joy.md calls
 ; X_ocaml_lib.output_html to render SVG below a cell; under ocaml-mdx
 ; validation there is no page to render into, so this stub accepts the
 ; HTML and drops it.
 (library
- (name x_ocaml_lib))
+ (name x_ocaml_lib)
+ (modules x_ocaml_lib))
+
+; Stand-in for the richer browser runtime used by the two game labs. It lets
+; mdx type-check their real setup cells without performing browser effects.
+(library
+ (name game_lib)
+ (modules game_lib))

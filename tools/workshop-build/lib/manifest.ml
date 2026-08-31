@@ -1,5 +1,6 @@
 type entry = {
-  part : int;
+  order : int;
+  part : int option;
   title : string;
   slug : string;
 }
@@ -18,15 +19,15 @@ let parse_filename name =
   try Scanf.sscanf slug "%d-" (fun part -> Some (part, slug))
   with Scanf.Scan_failure _ | End_of_file -> None
 
-let read_title path =
+let read_frontmatter path =
   try
     let ic = open_in path in
     let n = in_channel_length ic in
     let raw = really_input_string ic n in
     close_in ic;
     let fm, _ = Frontmatter.parse raw in
-    fm.title
-  with Sys_error _ -> ""
+    fm
+  with Sys_error _ -> Frontmatter.empty
 
 let build ~content_dir ~current_slug =
   let names =
@@ -37,11 +38,13 @@ let build ~content_dir ~current_slug =
     |> List.filter_map (fun name ->
          match parse_filename name with
          | None -> None
-         | Some (part, slug) ->
+         | Some (order, slug) ->
              let path = Filename.concat content_dir name in
              if Sys.is_directory path then None
-             else Some { part; title = read_title path; slug })
-    |> List.sort (fun a b -> compare a.part b.part)
+             else
+               let fm = read_frontmatter path in
+               Some { order; part = fm.part; title = fm.title; slug })
+    |> List.sort (fun a b -> compare a.order b.order)
   in
   { parts; current_slug }
 

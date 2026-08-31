@@ -10,6 +10,7 @@ type t = {
   think_about_this : string option;
   reading : reading list;
   toplevel_load : string option;
+  game : bool;
 }
 
 val empty : t

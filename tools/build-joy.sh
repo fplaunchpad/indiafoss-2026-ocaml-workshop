@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build assets/x-ocaml/joy_core.js: the Joy toplevel payload that the
-# Joy page (content/joy.md, frontmatter key [toplevel_load]) side-loads
+# Joy page (content/06-joy.md, frontmatter key [toplevel_load]) side-loads
 # into the x-ocaml worker through the runtime's src-load attribute.
 #
 # The payload is compiled from vendor/joy/core, the same sources that
-# ocaml-mdx validates content/joy.md against, and with the same opam
+# ocaml-mdx validates content/06-joy.md against, and with the same opam
 # switch that builds the x-ocaml worker, so the embedded .cmi files
 # match the worker's OCaml version. (A payload built by a different
 # OCaml fails in the browser with "joy_core.cmi is not a compiled

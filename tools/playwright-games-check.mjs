@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// Smoke-test the standalone game exercises and their embedded OCaml runtime.
+// Smoke-test the chapter-built game exercises and their embedded OCaml runtime.
 
 import { chromium } from 'playwright';
 
 const ROOT = process.argv[2] || 'http://localhost:8765/_site';
 const games = [
-  ['Game of Life', 'games/life_partial_list.html'],
-  ['Tic-Tac-Toe', 'games/tictactoe_partial_list.html'],
+  ['Game of Life', '05-game-of-life.html'],
+  ['Tic-Tac-Toe', '04-tic-tac-toe.html'],
 ];
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+const context = await browser.newContext({ viewport: { width: 1440, height: 800 } });
 
 try {
   const landing = await context.newPage();
@@ -31,9 +31,9 @@ try {
   if (!landingText.includes('Final 45-minute game lab')
       || !landingText.includes('saved locally in this browser')
       || partLabels.join(',') !== '1,2,3'
-      || !gameLinks.includes('games/life_partial_list.html')
-      || !gameLinks.includes('games/tictactoe_partial_list.html')
-      || !gameLinks.includes('joy.html')) {
+      || !gameLinks.includes('05-game-of-life.html')
+      || !gameLinks.includes('04-tic-tac-toe.html')
+      || !gameLinks.includes('06-joy.html')) {
     throw new Error('landing page is missing the game-lab guidance or links');
   }
   if (!await gameCardTextDoesNotOverlap()) {
@@ -65,35 +65,37 @@ try {
     }, null, { timeout: 90_000 });
 
     const cellCount = await page.locator('x-ocaml').count();
-    const credit = await page.locator('.credit').textContent();
-    const home = await page.locator('.workshop-nav a').getAttribute('href');
-    const pageText = await page.locator('.content').innerText();
-    const refresherLinks = await page.locator('.content a[href*="02-data-types"]')
+    const credit = await page.locator('.chapter').first().textContent();
+    const home = await page.locator('.home-link').getAttribute('href');
+    const pageText = await page.locator('.chapter').innerText();
+    const refresherLinks = await page.locator('.chapter a[href*="02-data-types"]')
       .evaluateAll(links => links.map(link => link.getAttribute('href')));
     const layout = await page.evaluate(() => {
-      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const proseFont = Number.parseFloat(getComputedStyle(document.body).fontSize);
       const cell = document.querySelector('x-ocaml');
-      const content = document.querySelector('.content');
-      const sidebar = document.querySelector('.sidebar');
+      const content = document.querySelector('.chapter');
+      const board = document.querySelector('.game-board');
       return {
-        rootFont,
+        proseFont,
         cellFont: cell ? Number.parseFloat(getComputedStyle(cell).fontSize) : 0,
         contentWidth: content?.getBoundingClientRect().width || 0,
-        sidebarWidth: sidebar?.getBoundingClientRect().width || 0,
+        boardWidth: board?.getBoundingClientRect().width || 0,
+        boardGap: board && content
+          ? board.getBoundingClientRect().left - content.getBoundingClientRect().right : 0,
       };
     });
 
     let lifeStacksAtLaptopWidth = true;
     if (name === 'Game of Life') {
       await page.setViewportSize({ width: 1024, height: 800 });
-      lifeStacksAtLaptopWidth = await page.locator('.layout').evaluate(element =>
-        getComputedStyle(element).flexDirection === 'column');
-      await page.setViewportSize({ width: 1280, height: 800 });
+      lifeStacksAtLaptopWidth = await page.locator('.game-chapter-layout').evaluate(element =>
+        getComputedStyle(element).gridTemplateColumns.split(' ').length === 1);
+      await page.setViewportSize({ width: 1440, height: 800 });
     }
 
     // Running the board cell also evaluates its unfinished predecessors.
     await page.evaluate(() => {
-      const boardCell = document.querySelectorAll('x-ocaml')[1];
+      const boardCell = document.querySelector('x-ocaml[game-panel]');
       boardCell.shadowRoot.querySelector('.run_btn button').click();
     });
     try {
@@ -113,21 +115,23 @@ try {
     const failures = [
       [cellCount > 1, `expected multiple OCaml cells, found ${cellCount}`],
       [credit?.includes('Smayan Agarwal'), 'contributor credit is missing'],
-      [home === '../index.html', `workshop-home link is ${home}`],
+      [home === 'index.html', `workshop-home link is ${home}`],
       [pageText.includes('45-minute lab:'), 'game-lab scope is missing'],
       [pageText.includes('saved locally in this browser'), 'local-save guidance is missing'],
-      [refresherLinks.includes('../02-data-types.html#pattern-matching'),
+      [refresherLinks.includes('02-data-types.html#pattern-matching'),
         'pattern-matching refresher link is missing'],
-      [refresherLinks.includes('../02-data-types.html#matching-lists'),
+      [refresherLinks.includes('02-data-types.html#matching-lists'),
         'list-matching refresher link is missing'],
-      [layout.rootFont <= 16,
-        `${name} prose font is too large (${layout.rootFont}px)`],
-      [layout.cellFont <= layout.rootFont * 0.93,
-        `${name} editor font is too large (${layout.cellFont}px for ${layout.rootFont}px prose)`],
-      [name !== 'Game of Life' || layout.contentWidth >= 780,
-        `Life content column is too narrow (${layout.contentWidth}px)`],
-      [name !== 'Game of Life' || layout.sidebarWidth <= 321,
-        `Life sidebar exceeds its declared width (${layout.sidebarWidth}px)`],
+      [layout.proseFont <= 16,
+        `${name} prose font is too large (${layout.proseFont}px)`],
+      [layout.cellFont <= layout.proseFont * 0.93,
+        `${name} editor font is too large (${layout.cellFont}px for ${layout.proseFont}px prose)`],
+      [layout.contentWidth >= 700,
+        `${name} content column is too narrow (${layout.contentWidth}px)`],
+      [layout.boardWidth <= 321,
+        `${name} board exceeds its declared width (${layout.boardWidth}px)`],
+      [layout.boardGap <= 36,
+        `${name} board is detached from the content (${layout.boardGap}px gap)`],
       [lifeStacksAtLaptopWidth, 'Life layout does not stack at laptop width'],
       [panelChildren > 0, 'game panel did not render'],
       [errors.length === 0, errors.join('\n')],
@@ -143,8 +147,7 @@ try {
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(marker);
-    await page.waitForFunction(() =>
-      document.querySelector('[data-save-status]')?.dataset.state === 'saved');
+    await page.waitForTimeout(800);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => {
@@ -159,13 +162,17 @@ try {
     if (!restored.includes(marker)) throw new Error(`${name}: saved work did not survive reload`);
 
     await page.evaluate(() => {
-      localStorage.removeItem(`indiafoss-ocaml-game:${document.body.dataset.gameId}`);
+      const prefix = `indiafoss-ocaml-cell:${location.pathname}#`;
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(prefix)) localStorage.removeItem(key);
+      }
     });
     console.log(`${name}: ${cellCount} cells upgraded; game rendered; work survived reload`);
     await page.close();
   }
 
-  // The Joy sandbox page: chapter-built, no problems or persistence.
+  // The Joy sandbox page: chapter-built and listed with the other labs.
   // Check that its cells upgrade, that the src-load Joy payload is
   // reachable, and that running a `show` cell renders an SVG.
   {
@@ -178,7 +185,7 @@ try {
     page.on('requestfailed', request =>
       errors.push(`request: ${request.url()} — ${request.failure()?.errorText}`));
 
-    await page.goto(`${ROOT}/joy.html`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${ROOT}/06-joy.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!customElements.get('x-ocaml'), null,
       { timeout: 90_000 });
     await page.waitForFunction(() => {

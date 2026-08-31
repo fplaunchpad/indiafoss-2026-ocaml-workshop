@@ -22,8 +22,8 @@ would rather draw than build a game. Everything you learned in Parts 1
 and 2 (functions, `|>`, labelled arguments, lists) applies directly.
 
 Run the cells from top to bottom: the setup cell first, then any cell
-you like. Edit anything and re-run it. Unlike the game pages, this page
-does not save your edits, so copy out anything you want to keep.
+you like. Edit anything and re-run it. Your edits are saved locally in
+this browser as you type.
 
 This page adapts the interactive notebook from the
 [ocaml-joy repository](https://github.com/Sudha247/ocaml-joy).

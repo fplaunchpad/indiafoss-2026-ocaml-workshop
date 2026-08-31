@@ -48,6 +48,8 @@ type kind =
   | Fragment
   | Notes
   | Solution
+  | Provided
+  | Game_panel
   | Quiz_mcq of string * int  (* id, 1-based source line of the opening ::: *)
   | Quiz_code of string * int
   | Cols
@@ -142,6 +144,8 @@ let parse_open ~quiz_counter ~line_no line =
     | "fragment" -> Some Fragment
     | "notes" -> Some Notes
     | "solution" -> Some Solution
+    | "provided" -> Some Provided
+    | "game-panel" -> Some Game_panel
     | "cols" -> Some Cols
     | _ when rest = "col" -> Some (Col None)
     | _ when String.length rest >= 4
@@ -175,6 +179,10 @@ let open_tag = function
   | Notes -> "<aside class=\"notes\">"
   | Solution ->
       "<details class=\"solution\"><summary>Show reference solution</summary>"
+  | Provided ->
+      "<details class=\"provided\"><summary>Provided code</summary>"
+  | Game_panel ->
+      "<details class=\"provided game-panel-source\"><summary>Provided game and board code</summary>"
   | Quiz_mcq (id, line) ->
       Printf.sprintf
         "<div class=\"quiz quiz-mcq\" data-quiz-id=\"%s\" data-quiz-line=\"%d\">"
@@ -191,7 +199,7 @@ let close_tag = function
   | Slide | Subslide -> "</section>"
   | Fragment -> "</div>"
   | Notes -> "</aside>"
-  | Solution -> "</details>"
+  | Solution | Provided | Game_panel -> "</details>"
   | Quiz_mcq _ | Quiz_code _ -> "</div>"
   | Cols | Col _ -> "</div>"
 
@@ -237,6 +245,14 @@ let inject_quiz_test_marker line =
   let leading = String.sub s 0 prefix_len in
   leading ^ body_trimmed ^ " quiz-test"
 
+let inject_marker line marker =
+  let n = String.length line in
+  let i = ref 0 in
+  while !i < n && (line.[!i] = ' ' || line.[!i] = '\t') do incr i done;
+  let leading = String.sub line 0 !i in
+  let body = String.sub line !i (n - !i) |> String.trim in
+  leading ^ body ^ " " ^ marker
+
 (* [line_offset] shifts the recorded source-line numbers up so they
    match the original file's line numbering (the body the caller
    hands us has already had the YAML frontmatter stripped off). It
@@ -250,6 +266,7 @@ let preprocess ?(line_offset = 0) src =
   let in_quiz_code () =
     List.exists (function Quiz_code _ -> true | _ -> false) !stack
   in
+  let in_kind wanted = List.exists (fun kind -> kind = wanted) !stack in
   let in_code_block = ref false in
   List.iteri
     (fun i line ->
@@ -286,15 +303,21 @@ let preprocess ?(line_offset = 0) src =
               Buffer.add_string buf "\n";
               Buffer.add_string buf (close_tag k);
               Buffer.add_string buf "\n\n")
-      | None when is_fence_line && in_quiz_code () && not !in_code_block
+      | None when is_fence_line && not !in_code_block
                   && is_ocaml_fence_open line ->
           (* Opening an ocaml code block inside a quiz-code div. The
              [skip]-labelled fences are the hidden test cells; any
              other fence (the student cell, or a display fence that is
              part of the question) stays visible. *)
           in_code_block := true;
-          if fence_has_skip line then begin
+          if in_quiz_code () && fence_has_skip line then begin
             Buffer.add_string buf (inject_quiz_test_marker line);
+            Buffer.add_char buf '\n'
+          end else if in_kind Game_panel then begin
+            Buffer.add_string buf (inject_marker line "game-panel=#game-panel");
+            Buffer.add_char buf '\n'
+          end else if in_kind Solution then begin
+            Buffer.add_string buf (inject_marker line "run-on=peek");
             Buffer.add_char buf '\n'
           end else begin
             Buffer.add_string buf line;
@@ -322,6 +345,8 @@ let preprocess ?(line_offset = 0) src =
         | Fragment -> "fragment"
         | Notes -> "notes"
         | Solution -> "solution"
+        | Provided -> "provided"
+        | Game_panel -> "game-panel"
         | Quiz_mcq (id, l) -> Printf.sprintf "quiz mcq %s (line %d)" id l
         | Quiz_code (id, l) -> Printf.sprintf "quiz code %s (line %d)" id l
         | Cols -> "cols"

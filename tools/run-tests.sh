@@ -8,11 +8,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 python3 tools/check-links.py
-python3 tools/check-game-cells.py \
-  games/life_partial_list.html \
-  games/tictactoe_partial_list.html
 opam exec -- dune runtest
 tools/build-site.sh
+python3 tools/check-game-cells.py \
+  _site/05-game-of-life.html \
+  _site/04-tic-tac-toe.html
 
 PORT="${PORT:-8765}"
 python3 -m http.server "$PORT" --directory . >/dev/null 2>&1 &

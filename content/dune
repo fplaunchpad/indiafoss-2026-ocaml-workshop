@@ -6,7 +6,9 @@
   01-basics.md
   02-data-types.md
   03-modules.md
-  joy.md)
- ; joy.md's cells use the vendored Joy library plus a stub for the
+  04-tic-tac-toe.md
+  05-game-of-life.md
+  06-joy.md)
+ ; 06-joy.md's cells use the vendored Joy library plus a stub for the
  ; X_ocaml_lib module the browser runtime provides.
- (libraries joy_core x_ocaml_lib))
+ (libraries joy_core x_ocaml_lib game_lib))

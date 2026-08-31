@@ -16,7 +16,7 @@ by [Smayan Agarwal](https://github.com/SmayanAgarwal) in
 The three-hour session reserves its final 45 minutes for participants to choose
 and work on one of these games; stretch problems can be continued afterward.
 A third, open-ended lab option is a [Joy](https://github.com/Sudha247/ocaml-joy)
-creative-coding sandbox (`content/joy.md`); the session does not cover it.
+creative-coding sandbox (`content/06-joy.md`); the session does not cover it.
 
 Every OCaml block is editable and runnable in the browser. Each page can
 also switch into a reveal.js slide deck for the live session.
@@ -43,18 +43,17 @@ a different port.
 tools/run-tests.sh
 ```
 
-This validates the Markdown code blocks, extracts and compiles the OCaml cells
-from the standalone game pages, runs every game reference solution against its
-hidden tests, tests the static-site builder, renders the site, and runs the
-browser smoke checks.
+This validates every Markdown page, builds the site, extracts and compiles the
+generated game cells, runs every game reference solution against its hidden
+tests, tests the static-site builder, and runs the browser smoke checks.
 
 ## Project layout
 
-- `content/` — the three workshop parts and the Joy sandbox page
+- `content/` — the three workshop parts and all three game-lab pages
 - `tools/workshop-build/` — Markdown-to-HTML builder
 - `assets/x-ocaml/` — prebuilt in-browser OCaml runtime
 - `assets/reveal/`, `assets/katex/`, `assets/css/` — presentation assets
-- `games/` — standalone interactive practice exercises
+- `games/` — the browser runtime used by the two stateful game boards
 - `tools/build-site.sh` — complete site build
 - `tools/preview-site.sh` — build and serve a local preview
 

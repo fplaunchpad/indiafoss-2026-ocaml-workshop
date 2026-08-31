@@ -41,7 +41,8 @@ let rewrite_asset_urls ~asset_root html =
     done;
     Buffer.contents buf
 
-(* Numbered workshop files must carry a matching [part] value. *)
+(* Numbered filenames determine navigation order. Core chapters also carry a
+   matching [part]; lab pages deliberately omit it. *)
 let check_part_frontmatter ~src (fm : Workshop_build.Frontmatter.t) =
   match Workshop_build.Manifest.parse_filename (Filename.basename src) with
   | None -> ()
@@ -57,7 +58,7 @@ let check_part_frontmatter ~src (fm : Workshop_build.Frontmatter.t) =
           fail
             (Printf.sprintf
                "frontmatter: part %d does not match filename part %02d" n part)
-      | None -> fail "frontmatter: missing part")
+      | None -> ())
 
 let render_one ~src ~dst ~asset_root =
   let raw = read_file src in

@@ -77,6 +77,10 @@ keywords: ["with spaces", bare]
   check_string "title unquoted" "single quoted" fm.title;
   check_string_list "keywords mixed quoting" ["with spaces"; "bare"] fm.keywords
 
+let fm_game () =
+  let fm, _ = Frontmatter.parse "---\ntitle: Lab\ngame: true\n---\n" in
+  check_bool "game page" true fm.game
+
 (* ---- Divs preprocessor --------------------------------------------- *)
 
 let divs_slide_simple () =
@@ -336,6 +340,19 @@ let divs_quiz_mix_ids () =
     (try ignore (Str.search_forward (Str.regexp_string "data-quiz-id=\"q2\"") out 0); true
      with Not_found -> false)
 
+let divs_game_semantics () =
+  let src =
+    ":::game-panel\n```ocaml\nlet board = ()\n```\n:::\n\n:::solution\n```ocaml\nlet answer = 42\n```\n:::\n\n:::provided\ntext\n:::\n"
+  in
+  let out = Divs.preprocess src in
+  let has needle =
+    try ignore (Str.search_forward (Str.regexp_string needle) out 0); true
+    with Not_found -> false
+  in
+  check_bool "game panel attr generated" true (has "```ocaml game-panel=#game-panel");
+  check_bool "solution peek attr generated" true (has "```ocaml run-on=peek");
+  check_bool "provided details generated" true (has "<details class=\"provided\">")
+
 (* ---- Divs hardening -------------------------------------------------- *)
 
 let divs_marker_inside_code_fence_is_literal () =
@@ -372,6 +389,7 @@ let () =
           Alcotest.test_case "basic" `Quick fm_basic;
           Alcotest.test_case "missing" `Quick fm_no_frontmatter;
           Alcotest.test_case "quoted strings" `Quick fm_quoted_strings;
+          Alcotest.test_case "game" `Quick fm_game;
           Alcotest.test_case "unknown key rejected" `Quick fm_unknown_key_rejected;
         ] );
       ( "divs",
@@ -404,5 +422,6 @@ let () =
           Alcotest.test_case "explicit id wins" `Quick divs_quiz_explicit_id;
           Alcotest.test_case "id is slugified" `Quick divs_quiz_id_slugged;
           Alcotest.test_case "mix explicit + fallback" `Quick divs_quiz_mix_ids;
+          Alcotest.test_case "game semantics" `Quick divs_game_semantics;
         ] );
     ]

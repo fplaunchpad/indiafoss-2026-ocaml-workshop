@@ -1,7 +1,8 @@
 (** Navigation manifest for the numbered workshop parts. *)
 
 type entry = {
-  part : int;
+  order : int;
+  part : int option;
   title : string;
   slug : string;
 }

@@ -37,6 +37,7 @@ type t = {
       (* Extra .js toplevel payload (repo-relative path) the x-ocaml
          runtime should load via its [src-load] attribute, e.g. the Joy
          library on the creative-coding page. *)
+  game : bool;
 }
 
 let empty =
@@ -50,6 +51,7 @@ let empty =
     think_about_this = None;
     reading = [];
     toplevel_load = None;
+    game = false;
   }
 
 let strip_quotes s =
@@ -146,6 +148,11 @@ let parse_value t key value rest_lines =
       ({ t with think_about_this = Some (strip_quotes v_trimmed) }, rest_lines)
   | "toplevel_load" ->
       ({ t with toplevel_load = Some (strip_quotes v_trimmed) }, rest_lines)
+  | "game" ->
+      let value = String.lowercase_ascii v_trimmed in
+      if value = "true" then ({ t with game = true }, rest_lines)
+      else if value = "false" then ({ t with game = false }, rest_lines)
+      else failwith "frontmatter: game must be true or false"
   | "reading" ->
       (* Collect block-style entries until we hit an unindented line. *)
       let block, rest =
@@ -167,7 +174,7 @@ let parse_value t key value rest_lines =
         (Printf.sprintf
            "frontmatter: unknown key %S (known: title, part, \
             duration_target_min, concepts, keywords, activity_question, \
-            think_about_this, reading, toplevel_load)"
+            think_about_this, reading, toplevel_load, game)"
            key)
 
 let parse_lines lines =

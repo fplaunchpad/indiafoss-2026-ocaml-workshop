@@ -2,7 +2,7 @@
 # Refresh the vendored ocaml-joy core sources (vendor/joy/core/) from
 # the svg branch of https://github.com/Sudha247/ocaml-joy, then rebuild
 # the browser payload from them (tools/build-joy.sh), so the sources
-# mdx validates content/joy.md against and the code the browser cells
+# mdx validates content/06-joy.md against and the code the browser cells
 # run stay identical.
 set -euo pipefail
 

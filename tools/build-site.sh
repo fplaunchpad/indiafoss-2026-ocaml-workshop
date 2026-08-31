@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the three workshop parts and a small landing page.
+# Build the workshop chapters, game labs, and landing page.
 
 set -euo pipefail
 
@@ -14,7 +14,7 @@ COPY_ASSETS="${COPY_ASSETS:-0}"
 if [ "$#" -gt 0 ]; then
   files=("$@")
 else
-  files=("$REPO_ROOT"/content/[0-9][0-9]-*.md "$REPO_ROOT/content/joy.md")
+  files=("$REPO_ROOT"/content/[0-9][0-9]-*.md)
 fi
 
 mkdir -p "$REPO_ROOT/_site"
@@ -112,15 +112,15 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       <p><strong>Open your chosen game during the briefing. Your answers are
         saved locally in this browser as you type.</strong></p>
       <ul class="parts games">
-        <li><a href="games/life_partial_list.html"><span class="part-no">Challenge</span><span>
+        <li><a href="05-game-of-life.html"><span class="part-no">Challenge</span><span>
           <span class="part-title">Conway's Game of Life</span>
           <span class="part-summary">Build a simulation using lists</span>
         </span></a></li>
-        <li><a href="games/tictactoe_partial_list.html"><span class="part-no">Recommended</span><span>
+        <li><a href="04-tic-tac-toe.html"><span class="part-no">Recommended</span><span>
           <span class="part-title">Tic-Tac-Toe</span>
           <span class="part-summary">Build a playable game step by step</span>
         </span></a></li>
-        <li><a href="joy.html"><span class="part-no">Sandbox</span><span>
+        <li><a href="06-joy.html"><span class="part-no">Sandbox</span><span>
           <span class="part-title">Joy: Creative Coding</span>
           <span class="part-summary">Draw with code; open-ended, nothing to complete</span>
         </span></a></li>
