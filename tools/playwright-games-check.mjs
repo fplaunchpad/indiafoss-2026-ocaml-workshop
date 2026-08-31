@@ -70,6 +70,26 @@ try {
     const pageText = await page.locator('.content').innerText();
     const refresherLinks = await page.locator('.content a[href*="02-data-types"]')
       .evaluateAll(links => links.map(link => link.getAttribute('href')));
+    const layout = await page.evaluate(() => {
+      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const cell = document.querySelector('x-ocaml');
+      const content = document.querySelector('.content');
+      const sidebar = document.querySelector('.sidebar');
+      return {
+        rootFont,
+        cellFont: cell ? Number.parseFloat(getComputedStyle(cell).fontSize) : 0,
+        contentWidth: content?.getBoundingClientRect().width || 0,
+        sidebarWidth: sidebar?.getBoundingClientRect().width || 0,
+      };
+    });
+
+    let lifeStacksAtLaptopWidth = true;
+    if (name === 'Game of Life') {
+      await page.setViewportSize({ width: 1024, height: 800 });
+      lifeStacksAtLaptopWidth = await page.locator('.layout').evaluate(element =>
+        getComputedStyle(element).flexDirection === 'column');
+      await page.setViewportSize({ width: 1280, height: 800 });
+    }
 
     // Running the board cell also evaluates its unfinished predecessors.
     await page.evaluate(() => {
@@ -100,6 +120,13 @@ try {
         'pattern-matching refresher link is missing'],
       [refresherLinks.includes('../02-data-types.html#matching-lists'),
         'list-matching refresher link is missing'],
+      [name !== 'Game of Life' || layout.cellFont <= layout.rootFont * 0.93,
+        `Life editor font is too large (${layout.cellFont}px for ${layout.rootFont}px prose)`],
+      [name !== 'Game of Life' || layout.contentWidth >= 780,
+        `Life content column is too narrow (${layout.contentWidth}px)`],
+      [name !== 'Game of Life' || layout.sidebarWidth <= 321,
+        `Life sidebar exceeds its declared width (${layout.sidebarWidth}px)`],
+      [lifeStacksAtLaptopWidth, 'Life layout does not stack at laptop width'],
       [panelChildren > 0, 'game panel did not render'],
       [errors.length === 0, errors.join('\n')],
     ].filter(([ok]) => !ok).map(([, message]) => message);
