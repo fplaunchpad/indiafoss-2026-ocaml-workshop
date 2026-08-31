@@ -29,6 +29,12 @@ jobs:
       - name: Install OCaml deps
         run: opam install . --deps-only --with-test -y
 
+      - name: Validate standalone game cells
+        run: >-
+          python3 tools/check-game-cells.py
+          games/life_partial_list.html
+          games/tictactoe_partial_list.html
+
       - name: Build
         run: opam exec -- dune build tools/workshop-build/bin/main.exe
 

@@ -43,8 +43,10 @@ a different port.
 tools/run-tests.sh
 ```
 
-This validates the Markdown code blocks, tests the static-site builder,
-renders the site, and runs the browser smoke checks.
+This validates the Markdown code blocks, extracts and compiles the OCaml cells
+from the standalone game pages, runs every game reference solution against its
+hidden tests, tests the static-site builder, renders the site, and runs the
+browser smoke checks.
 
 ## Project layout
 

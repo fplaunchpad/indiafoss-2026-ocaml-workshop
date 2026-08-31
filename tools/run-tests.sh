@@ -8,6 +8,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 python3 tools/check-links.py
+python3 tools/check-game-cells.py \
+  games/life_partial_list.html \
+  games/tictactoe_partial_list.html
 opam exec -- dune runtest
 tools/build-site.sh
 
