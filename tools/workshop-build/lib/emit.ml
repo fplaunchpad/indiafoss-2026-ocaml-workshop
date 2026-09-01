@@ -265,7 +265,11 @@ let runtime_script ~asset_root =
     }
 
     function allCells() {
-      return Array.from(document.querySelectorAll('x-ocaml'));
+      // The hidden runtime sentinel is an implementation detail, not an
+      // editable workshop cell. Keep it out of persistence, toolbar actions,
+      // reset buttons, and quiz bookkeeping.
+      return Array.from(document.querySelectorAll(
+        'x-ocaml:not([data-runtime-sentinel])'));
     }
 
     // Hide slide area until x-ocaml has finished reflowing each
@@ -565,26 +569,54 @@ let runtime_script ~asset_root =
     injectResetButtons();
 
     // After x-ocaml upgrades each cell (Run button appears in shadow),
-    // wire persistence and restore any saved edits.
-    // x-ocaml warms up its worker by auto-evaluating the first cell. On game
-    // pages that response is also the only reliable readiness signal from the
-    // large custom worker. Do not enable Run/Check interactions before it.
-    let userInteracted = false;
-    function watchRunButton(cell) {
-      const btn = cell.shadowRoot?.querySelector('.run_btn button');
-      if (!btn) return;
-      btn.addEventListener('click', () => { userInteracted = true; });
+    // restore saved edits and wait for the complete initial evaluation chain
+    // before enabling interaction. Game pages load a large custom worker; a
+    // response from the first cell does not mean later cells are quiescent.
+    function runtimeSentinel() {
+      return document.querySelector('x-ocaml[data-runtime-sentinel]');
     }
-    function firstCellHasOutput() {
-      const first = allCells()[0];
-      return !!first?.shadowRoot?.querySelector(
-        '.caml_meta, .caml_stdout, .caml_stderr, .caml_html');
+    function sentinelHasCompleted() {
+      const sentinel = runtimeSentinel();
+      const out = Array.from(sentinel?.shadowRoot?.querySelectorAll(
+        '.caml_meta, .caml_stdout, .caml_stderr, .caml_html') || [])
+        .map(e => e.textContent || '').join('\n');
+      return out.includes('__indiafoss_runtime_ready__');
     }
-    async function waitForRuntimeWarmup() {
+    async function waitForRuntimeQuiescence() {
       if (!body.classList.contains('game-chapter')) return;
-      const deadline = performance.now() + 45000;
-      while (!firstCellHasOutput() && performance.now() < deadline) {
+      const sentinel = runtimeSentinel();
+      if (!sentinel) throw new Error('game page is missing its runtime sentinel');
+      // Force this one implementation cell back to Not_run. Unlike clearAll,
+      // this does not disturb any learner cell. Waiting one task lets the
+      // custom element's MutationObserver apply both restored learner source
+      // and this sentinel reset before we request the final chain run.
+      const sentinelSource = sentinel.textContent;
+      sentinel.textContent = '';
+      sentinel.textContent = sentinelSource;
+      await new Promise(r => setTimeout(r, 0));
+      sentinel.shadowRoot
+        ?.querySelectorAll('.caml_meta, .caml_stdout, .caml_stderr, .caml_html')
+        .forEach(e => { e.textContent = ''; });
+      // Restoring source can invalidate the automatic load chain while it is
+      // running. Explicitly requesting the final sentinel re-establishes the
+      // chain and makes its response a true all-predecessors-complete signal.
+      clickRun(sentinel);
+      const deadline = performance.now() + 90000;
+      while (!sentinelHasCompleted() && performance.now() < deadline) {
         await new Promise(r => setTimeout(r, 100));
+      }
+      if (!sentinelHasCompleted()) {
+        throw new Error('game runtime did not become ready within 90 seconds');
+      }
+    }
+    // Remove startup output without mutating host textContent. The old
+    // clearAll() route re-fed every cell through x-ocaml's MutationObserver,
+    // invalidating the just-completed chain and reopening a cold-start race.
+    function clearRenderedOutputs() {
+      for (const cell of allCells()) {
+        cell.shadowRoot
+          ?.querySelectorAll('.caml_meta, .caml_stdout, .caml_stderr, .caml_html')
+          .forEach(e => { e.textContent = ''; });
       }
     }
 
@@ -611,31 +643,22 @@ let runtime_script ~asset_root =
         if (ready) break;
         await new Promise(r => setTimeout(r, 100));
       }
-      await waitForRuntimeWarmup();
       restorePersistedCells();
+      await waitForRuntimeQuiescence();
       for (const c of allCells()) {
         injectCellStyle(c);
         watchCellForEdits(c);
-        watchRunButton(c);
       }
-      // Wipe any stale output left over from previous sessions.
-      clearAll();
+      // Hide automatic startup output without invalidating cell state.
+      clearRenderedOutputs();
       body.classList.add('runtime-ready');
       // Code quizzes can now find the test cell's shadow Run button.
       setupCodeQuizzes();
     }
     whenCellsReady();
 
-    // The toolbar run buttons count as interaction too; otherwise
-    // the warmup suppressor above can eat the FIRST cell's output
-    // when "Run all" is clicked within its 10s watch window, and
-    // the first cell looks dead until run individually.
-    document.querySelector('.run-all')?.addEventListener('click', () => {
-      userInteracted = true; runAll();
-    });
-    document.querySelector('.run-up-to-here')?.addEventListener('click', () => {
-      userInteracted = true; runUpToHere();
-    });
+    document.querySelector('.run-all')?.addEventListener('click', runAll);
+    document.querySelector('.run-up-to-here')?.addEventListener('click', runUpToHere);
     document.querySelector('.clear-all')?.addEventListener('click', clearAll);
     document.querySelector('.reset-all')?.addEventListener('click', resetAll);
 
@@ -686,7 +709,6 @@ let runtime_script ~asset_root =
         n.nodeType === 1 && n.tagName === 'X-OCAML');
       if (!cell) return;
       ev.preventDefault();
-      userInteracted = true;
       pinDuringRun(cell);
       clickRun(cell);
     }, true);
@@ -1378,6 +1400,11 @@ let render_body ~html_body ~(fm : Frontmatter.t) ~manifest =
   Buffer.add_string buf html_body;
   Buffer.add_string buf "\n</article>\n";
   if fm.game then begin
+    (* A final, hidden x-ocaml cell is a reliable worker-readiness barrier:
+       its output arrives only after every authored predecessor has completed.
+       The page runtime excludes it from learner-facing cell operations. *)
+    Buffer.add_string buf
+      "<x-ocaml data-runtime-sentinel=\"true\" hidden>let () = print_endline \"__indiafoss_runtime_ready__\"</x-ocaml>\n";
     Buffer.add_string buf
       "<aside class=\"game-board chapter-only\" aria-label=\"Game board\"><h2>Board</h2><div id=\"game-panel\"></div></aside>\n";
     Buffer.add_string buf "</main>\n"

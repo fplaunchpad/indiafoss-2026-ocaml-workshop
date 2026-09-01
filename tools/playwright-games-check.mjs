@@ -63,6 +63,10 @@ try {
     page.on('requestfailed', request =>
       errors.push(`request: ${request.url()} — ${request.failure()?.errorText}`));
 
+    // The landing-page mobile assertion resizes its page. Set the intended
+    // desktop viewport explicitly so no browser/context viewport state can
+    // leak into game layout measurements.
+    await page.setViewportSize({ width: 1440, height: 800 });
     await page.goto(`${ROOT}/${path}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!customElements.get('x-ocaml'), null,
       { timeout: 90_000 });
@@ -73,6 +77,28 @@ try {
     }, null, { timeout: 90_000 });
     await page.waitForFunction(() => document.body.classList.contains('runtime-ready'),
       null, { timeout: 90_000 });
+
+    // Regression: runtime-ready must mean the entire automatic cell chain is
+    // quiescent. Replace the first exercise with its reference answer and
+    // press Check immediately; the old first-cell gate intermittently
+    // produced "Unbound value" here for another 10-20 seconds.
+    const firstQuiz = page.locator('.quiz-code[data-quiz-id]').first();
+    const firstStudent = firstQuiz
+      .locator('x-ocaml:not([data-quiz-test]):not([run-on="peek"])').last();
+    const firstSolution = page.locator('.solution x-ocaml[run-on="peek"]').first();
+    const solutionText = await firstSolution.getAttribute('data-source');
+    if (!solutionText) throw new Error(`${name}: first reference solution is empty`);
+    const firstEditor = firstStudent.locator('.cm-content');
+    await firstEditor.click();
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+    await page.keyboard.insertText(solutionText);
+    await firstQuiz.locator('.quiz-check').click();
+    await page.waitForFunction(() => {
+      const status = document.querySelector('.quiz-code[data-quiz-id] .quiz-status');
+      return status?.classList.contains('pass') || status?.classList.contains('fail');
+    }, null, { timeout: 90_000 });
+    const coldCheckPassed = await firstQuiz.locator('.quiz-status')
+      .evaluate(status => status.classList.contains('pass'));
 
     const sidebarLinks = await page.locator('.sidebar-nav a').allTextContents();
     await page.evaluate(() => {
@@ -98,6 +124,9 @@ try {
       const content = document.querySelector('.chapter');
       const board = document.querySelector('.game-board');
       return {
+        viewportWidth: window.innerWidth,
+        gridColumns: getComputedStyle(document.querySelector('.game-chapter-layout'))
+          .gridTemplateColumns,
         proseFont,
         cellFont: cell ? Number.parseFloat(getComputedStyle(cell).fontSize) : 0,
         contentWidth: content?.getBoundingClientRect().width || 0,
@@ -181,7 +210,7 @@ try {
       [layout.contentWidth >= 700,
         `${name} content column is too narrow (${layout.contentWidth}px)`],
       [layout.boardWidth <= 321,
-        `${name} board exceeds its declared width (${layout.boardWidth}px)`],
+        `${name} board exceeds its declared width (${layout.boardWidth}px; viewport ${layout.viewportWidth}px; grid ${layout.gridColumns})`],
       [layout.boardGap <= 36,
         `${name} board is detached from the content (${layout.boardGap}px gap)`],
       [stickyBoard.position === 'sticky' && stickyBoard.clearance >= 8,
@@ -189,6 +218,7 @@ try {
       [lifeStacksAtLaptopWidth, 'Life layout does not stack at laptop width'],
       [lifeBoardVisibleAndContained, 'Life board is invisible or overflows its panel'],
       [panelChildren > 0, 'game panel did not render'],
+      [coldCheckPassed, 'immediate Check failed after runtime-ready'],
       [errors.length === 0, errors.join('\n')],
     ].filter(([ok]) => !ok).map(([, message]) => message);
 

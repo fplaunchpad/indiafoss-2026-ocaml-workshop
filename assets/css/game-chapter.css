@@ -8,6 +8,13 @@
   display: none;
 }
 
+/* x-ocaml's author-level :host display can override the browser's default
+   [hidden] rule. The readiness sentinel must never become a grid item and
+   displace the board into the content column. */
+x-ocaml[data-runtime-sentinel] {
+  display: none !important;
+}
+
 .game-chapter-layout {
   display: grid;
   grid-template-columns: minmax(0, 720px) 300px;
