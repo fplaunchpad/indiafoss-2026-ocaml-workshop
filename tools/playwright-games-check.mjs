@@ -68,9 +68,11 @@ try {
       { timeout: 90_000 });
     await page.waitForFunction(() => {
       const cells = Array.from(document.querySelectorAll('x-ocaml'));
-      return cells.length > 1 && cells.slice(0, 2)
+      return cells.length > 1 && cells
         .every(cell => cell.shadowRoot?.querySelector('.run_btn button'));
     }, null, { timeout: 90_000 });
+    await page.waitForFunction(() => document.body.classList.contains('runtime-ready'),
+      null, { timeout: 90_000 });
 
     const sidebarLinks = await page.locator('.sidebar-nav a').allTextContents();
     await page.evaluate(() => {
@@ -113,6 +115,18 @@ try {
       await page.setViewportSize({ width: 1440, height: 800 });
     }
 
+    await page.evaluate(() => scrollTo(0, 900));
+    await page.waitForTimeout(100);
+    const stickyBoard = await page.evaluate(() => {
+      const header = document.querySelector('.page-header')?.getBoundingClientRect();
+      const board = document.querySelector('.game-board')?.getBoundingClientRect();
+      return {
+        position: getComputedStyle(document.querySelector('.game-board')).position,
+        clearance: board && header ? board.top - header.bottom : -999,
+      };
+    });
+    await page.evaluate(() => scrollTo(0, 0));
+
     // Running the board cell also evaluates its unfinished predecessors.
     await page.evaluate(() => {
       const boardCell = document.querySelector('x-ocaml[game-panel]');
@@ -131,6 +145,21 @@ try {
         { cause: error });
     }
     const panelChildren = await page.locator('#game-panel').evaluate(node => node.children.length);
+    let lifeBoardVisibleAndContained = true;
+    if (name === 'Game of Life') {
+      await page.locator('#game-panel [data-xo-pos="pattern:glider"]').click();
+      await page.waitForFunction(() => document.querySelectorAll('#game-panel td.life-on').length > 0);
+      lifeBoardVisibleAndContained = await page.evaluate(() => {
+        const panel = document.querySelector('#game-panel');
+        const table = panel?.querySelector('table.life');
+        const live = table?.querySelector('td.life-on');
+        if (!panel || !table || !live) return false;
+        const liveColor = getComputedStyle(live).backgroundColor;
+        const dead = table.querySelector('td.life-off');
+        return table.getBoundingClientRect().width <= panel.clientWidth + 1
+          && (!dead || liveColor !== getComputedStyle(dead).backgroundColor);
+      });
+    }
 
     const failures = [
       [cellCount > 1, `expected multiple OCaml cells, found ${cellCount}`],
@@ -155,7 +184,10 @@ try {
         `${name} board exceeds its declared width (${layout.boardWidth}px)`],
       [layout.boardGap <= 36,
         `${name} board is detached from the content (${layout.boardGap}px gap)`],
+      [stickyBoard.position === 'sticky' && stickyBoard.clearance >= 8,
+        `${name} board does not follow below the header (${stickyBoard.clearance}px clearance)`],
       [lifeStacksAtLaptopWidth, 'Life layout does not stack at laptop width'],
+      [lifeBoardVisibleAndContained, 'Life board is invisible or overflows its panel'],
       [panelChildren > 0, 'game panel did not render'],
       [errors.length === 0, errors.join('\n')],
     ].filter(([ok]) => !ok).map(([, message]) => message);
@@ -173,6 +205,8 @@ try {
     await page.waitForTimeout(800);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.classList.contains('runtime-ready'),
+      null, { timeout: 90_000 });
     await page.waitForFunction(() => {
       const firstQuiz = document.querySelector('.quiz-code[data-quiz-id]');
       const editable = Array.from(firstQuiz?.querySelectorAll('x-ocaml') || [])
@@ -213,7 +247,7 @@ try {
       { timeout: 90_000 });
     await page.waitForFunction(() => {
       const cells = Array.from(document.querySelectorAll('x-ocaml'));
-      return cells.length > 1 && cells.slice(0, 2)
+      return cells.length > 1 && cells
         .every(cell => cell.shadowRoot?.querySelector('.run_btn button'));
     }, null, { timeout: 90_000 });
     const cellCount = await page.locator('x-ocaml').count();

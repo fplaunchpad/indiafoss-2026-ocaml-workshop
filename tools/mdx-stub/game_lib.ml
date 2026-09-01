@@ -1,7 +1,10 @@
 type mouse = {
   pos : string;
-  drag : bool;
   button : [ `Left | `Right ];
+  shift : bool;
+  ctrl : bool;
+  alt : bool;
+  drag : bool;
 }
 
 let render (_ : string) = ()

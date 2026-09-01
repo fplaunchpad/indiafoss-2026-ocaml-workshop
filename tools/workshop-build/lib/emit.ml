@@ -566,44 +566,26 @@ let runtime_script ~asset_root =
 
     // After x-ocaml upgrades each cell (Run button appears in shadow),
     // wire persistence and restore any saved edits.
-    // x-ocaml warms up its worker by auto-evaluating the FIRST
-    // cell on the page once its runtime is ready. That auto-eval
-    // happens AFTER our initial clearAll(), so the first cell can
-    // show stale-looking output on a fresh page load. To suppress
-    // it without interfering with anything else, we watch only the
-    // first cell's shadow DOM for new output, and clear it once if
-    // it appears before the reader has interacted with any cell.
+    // x-ocaml warms up its worker by auto-evaluating the first cell. On game
+    // pages that response is also the only reliable readiness signal from the
+    // large custom worker. Do not enable Run/Check interactions before it.
     let userInteracted = false;
     function watchRunButton(cell) {
       const btn = cell.shadowRoot?.querySelector('.run_btn button');
       if (!btn) return;
       btn.addEventListener('click', () => { userInteracted = true; });
     }
-    function suppressFirstCellAutoWarmup() {
+    function firstCellHasOutput() {
       const first = allCells()[0];
-      if (!first) return;
-      const sr = first.shadowRoot;
-      if (!sr) return;
-      let cleared = false;
-      const obs = new MutationObserver(() => {
-        if (cleared) return;
-        if (userInteracted) { obs.disconnect(); return; }
-        const hasOutput = sr.querySelector(
-          '.caml_meta, .caml_stdout, .caml_stderr, .caml_html');
-        if (hasOutput) {
-          // x-ocaml's auto-warmup output. Clear once.
-          const txt = first.textContent;
-          first.textContent = '';
-          first.textContent = txt;
-          cleared = true;
-          obs.disconnect();
-        }
-      });
-      obs.observe(sr, { childList: true, subtree: true });
-      // Safety: stop watching after 10s regardless. x-ocaml's
-      // warmup is much faster than this; if it hasn't fired by then
-      // it probably will not.
-      setTimeout(() => obs.disconnect(), 10000);
+      return !!first?.shadowRoot?.querySelector(
+        '.caml_meta, .caml_stdout, .caml_stderr, .caml_html');
+    }
+    async function waitForRuntimeWarmup() {
+      if (!body.classList.contains('game-chapter')) return;
+      const deadline = performance.now() + 45000;
+      while (!firstCellHasOutput() && performance.now() < deadline) {
+        await new Promise(r => setTimeout(r, 100));
+      }
     }
 
     // Reserve a right-hand strip inside each cell's editor so code
@@ -629,6 +611,7 @@ let runtime_script ~asset_root =
         if (ready) break;
         await new Promise(r => setTimeout(r, 100));
       }
+      await waitForRuntimeWarmup();
       restorePersistedCells();
       for (const c of allCells()) {
         injectCellStyle(c);
@@ -637,8 +620,7 @@ let runtime_script ~asset_root =
       }
       // Wipe any stale output left over from previous sessions.
       clearAll();
-      // x-ocaml may then auto-warm the first cell; suppress that.
-      suppressFirstCellAutoWarmup();
+      body.classList.add('runtime-ready');
       // Code quizzes can now find the test cell's shadow Run button.
       setupCodeQuizzes();
     }
@@ -1151,6 +1133,19 @@ let runtime_script ~asset_root =
     // setupCodeQuizzes is therefore deferred until cells are ready
     // (see [whenCellsReady] below).
 
+    // Sticky elements must clear the header even when its controls wrap onto
+    // another row. CSS cannot derive a sibling's rendered height, so publish
+    // it as a custom property and keep it current.
+    const pageHeader = document.querySelector('.page-header');
+    function syncPageHeaderHeight() {
+      if (!pageHeader) return;
+      body.style.setProperty('--page-header-height', pageHeader.offsetHeight + 'px');
+    }
+    syncPageHeaderHeight();
+    if (pageHeader && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(syncPageHeaderHeight).observe(pageHeader);
+    }
+
     // Sidebar collapse, with persistence across pages.
     const SIDEBAR_KEY = 'indiafoss-ocaml-sidebar-hidden';
     function applySidebarHidden(hidden) {
@@ -1298,8 +1293,8 @@ let render_sidebar ~(manifest : Manifest.t option) =
       let in_lab = ref false in
       List.iter
         (fun (entry : Manifest.entry) ->
-          (match entry.part with
-           | None when not !in_lab ->
+          (match entry.lab with
+           | true when not !in_lab ->
                in_lab := true;
                Buffer.add_string buf
                  "    </ul>\n    <div class=\"sidebar-title sidebar-group\">Game lab</div>\n    <ul class=\"sidebar-parts sidebar-labs\">\n"

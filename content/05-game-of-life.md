@@ -4,6 +4,7 @@ duration_target_min: 45
 concepts: [lists, pattern matching, functional programming]
 keywords: [OCaml, game lab]
 game: true
+lab: true
 ---
 
 # Practice: Conway's Game of Life <span class="small">(list version)</span>
@@ -560,13 +561,13 @@ let random_grid p =
           List.init rows (fun _ -> List.init cols (fun _ -> Random.float 1.0 < p))
 ```
 
-Unlike the array version of this exercise, there's no in-place fill here at all -- a list has no cell to mutate, so the only way to build one is to hand `List.init` a function that produces each cell fresh. The outer `List.init` builds the rows, the inner one fills each row, and `Random.float 1.0 < p` is the coin flip: a number is picked uniformly between 0.0 and 1.0, and it lands below `p` with probability exactly `p`.
+Unlike the array version of this exercise, there is no in-place fill here. A list has no cell to mutate, so the only way to build one is to give `List.init` a function that produces each cell afresh. The outer `List.init` builds the rows, the inner one fills each row, and `Random.float 1.0 < p` is the coin flip: a number is picked uniformly between 0.0 and 1.0, and it lands below `p` with probability exactly `p`.
 
 :::
 ### Stretch: `parse_rule`
 
 :::quiz code id=life-q5
-Conway's rules ("a live cell survives on 2 or 3 neighbors, a dead cell is born on exactly 3") are really just one example of a whole family of similar automata. Two numbers describe any of them: a **Birth** number, whose digits are the neighbor counts that bring a dead cell to life, and a **Survive** number, whose digits are the neighbor counts a live cell survives on. Conway is birth `3`, survive `23` -- born on exactly 3 neighbors, survives on 2 or 3. Change one digit -- birth `36` instead of `3` -- and you get "HighLife", a different automaton on the exact same grid, famous for containing a small pattern that *replicates itself*, something standard Life has no known example of. `parse_rule` turns those two numbers into the two lists `next_cell_state_general` (next problem) will actually use, one `int` per digit: `parse_rule 3 23` becomes `([3], [2; 3])`.
+Conway's rules ("a live cell survives on 2 or 3 neighbors, a dead cell is born on exactly 3") are one example of a whole family of similar automata. Two numbers describe any of them: a **Birth** number, whose digits are the neighbor counts that bring a dead cell to life, and a **Survive** number, whose digits are the neighbor counts a live cell survives on. Conway is birth `3`, survive `23`: born on exactly 3 neighbors and surviving on 2 or 3. Change birth to `36` and you get "HighLife", a different automaton on the same grid that is famous for containing a small pattern that *replicates itself*. Standard Life has no known example of such a pattern. `parse_rule` turns those two numbers into the lists that `next_cell_state_general` will use, one `int` per digit: `parse_rule 3 23` becomes `([3], [2; 3])`.
 
 ```ocaml
 let parse_rule birth survive =
@@ -601,13 +602,13 @@ let parse_rule birth survive =
           (digits_of birth, digits_of survive)
 ```
 
-`digits_of` turns a number like `36` into the list `[3; 6]` by peeling digits off the low end with arithmetic: `n mod 10` is the last digit, `n / 10` is everything before it. `loop` keeps doing that, consing each digit onto the front of `acc` as it goes, so the accumulator ends up in the right order even though the digits are discovered least-significant first -- `36` gives up `6`, then `3`, and consing `3` onto the front of `[6]` puts it back in reading order. `0` (or a negative number) has no digits worth keeping, so it becomes `[]` -- exactly the empty survive rule Seeds needs.
+`digits_of` turns a number like `36` into the list `[3; 6]` by peeling digits off the low end with arithmetic: `n mod 10` is the last digit, and `n / 10` is everything before it. `loop` keeps doing that, consing each digit onto the front of `acc`. The accumulator ends up in the right order even though the digits are discovered least-significant first: `36` gives up `6`, then `3`, and consing `3` onto the front of `[6]` restores reading order. `0` (or a negative number) has no digits worth keeping, so it becomes `[]`, which is exactly the empty survive rule Seeds needs.
 
 :::
 ### Stretch: `next_cell_state_general`
 
 :::quiz code id=life-q6
-The general version of Problem 3's `next_cell_state`: instead of the rule numbers 2, 3 and 3 baked directly into the code, take the `(birth, survive)` lists `parse_rule` just produced and look the neighbor count up in whichever one applies -- `survive` if the cell is alive now, `birth` if it's dead. You may also use the convenient helper function: `List.mem`. It answers "is this number in that list?" directly, so there's no need for a match at all.
+This is the general version of Problem 3's `next_cell_state`. Instead of baking the rule numbers 2, 3 and 3 directly into the code, take the `(birth, survive)` lists produced by `parse_rule` and look up the neighbor count in the applicable list: `survive` if the cell is alive now, or `birth` if it is dead. You may use `List.mem`, which answers "is this number in that list?" directly, so no match is required.
 
 ```ocaml
 let next_cell_state_general (birth, survive) alive live_neighbors =

@@ -1,6 +1,7 @@
 type entry = {
   order : int;
   part : int option;
+  lab : bool;
   title : string;
   slug : string;
 }
@@ -43,9 +44,19 @@ let build ~content_dir ~current_slug =
              if Sys.is_directory path then None
              else
                let fm = read_frontmatter path in
-               Some { order; part = fm.part; title = fm.title; slug })
+               Some { order; part = fm.part; lab = fm.lab; title = fm.title; slug })
     |> List.sort (fun a b -> compare a.order b.order)
   in
+  let rec validate_groups seen_lab = function
+    | [] -> ()
+    | entry :: rest ->
+        if seen_lab && not entry.lab then
+          failwith
+            (Printf.sprintf
+               "manifest: core chapter %s appears after the game lab" entry.slug);
+        validate_groups (seen_lab || entry.lab) rest
+  in
+  validate_groups false parts;
   { parts; current_slug }
 
 let neighbors t =

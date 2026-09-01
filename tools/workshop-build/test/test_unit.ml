@@ -78,8 +78,9 @@ keywords: ["with spaces", bare]
   check_string_list "keywords mixed quoting" ["with spaces"; "bare"] fm.keywords
 
 let fm_game () =
-  let fm, _ = Frontmatter.parse "---\ntitle: Lab\ngame: true\n---\n" in
-  check_bool "game page" true fm.game
+  let fm, _ = Frontmatter.parse "---\ntitle: Lab\ngame: true\nlab: true\n---\n" in
+  check_bool "game page" true fm.game;
+  check_bool "lab page" true fm.lab
 
 (* ---- Divs preprocessor --------------------------------------------- *)
 

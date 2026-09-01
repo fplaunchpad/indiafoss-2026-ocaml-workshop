@@ -38,6 +38,4 @@ jobs:
       - name: Build site and validate game cells
         run: |
           tools/build-site.sh
-          python3 tools/check-game-cells.py \
-            _site/05-game-of-life.html \
-            _site/04-tic-tac-toe.html
+          python3 tools/check-game-cells.py

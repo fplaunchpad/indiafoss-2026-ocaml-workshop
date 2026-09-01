@@ -11,6 +11,7 @@ type t = {
   reading : reading list;
   toplevel_load : string option;
   game : bool;
+  lab : bool;
 }
 
 val empty : t

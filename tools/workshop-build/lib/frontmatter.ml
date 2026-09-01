@@ -38,6 +38,7 @@ type t = {
          runtime should load via its [src-load] attribute, e.g. the Joy
          library on the creative-coding page. *)
   game : bool;
+  lab : bool;
 }
 
 let empty =
@@ -52,6 +53,7 @@ let empty =
     reading = [];
     toplevel_load = None;
     game = false;
+    lab = false;
   }
 
 let strip_quotes s =
@@ -153,6 +155,11 @@ let parse_value t key value rest_lines =
       if value = "true" then ({ t with game = true }, rest_lines)
       else if value = "false" then ({ t with game = false }, rest_lines)
       else failwith "frontmatter: game must be true or false"
+  | "lab" ->
+      let value = String.lowercase_ascii v_trimmed in
+      if value = "true" then ({ t with lab = true }, rest_lines)
+      else if value = "false" then ({ t with lab = false }, rest_lines)
+      else failwith "frontmatter: lab must be true or false"
   | "reading" ->
       (* Collect block-style entries until we hit an unindented line. *)
       let block, rest =
@@ -174,7 +181,7 @@ let parse_value t key value rest_lines =
         (Printf.sprintf
            "frontmatter: unknown key %S (known: title, part, \
             duration_target_min, concepts, keywords, activity_question, \
-            think_about_this, reading, toplevel_load, game)"
+            think_about_this, reading, toplevel_load, game, lab)"
            key)
 
 let parse_lines lines =

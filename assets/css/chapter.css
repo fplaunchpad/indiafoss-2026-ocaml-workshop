@@ -39,6 +39,15 @@ body.mode-chapter {
 body.mode-chapter { --x-ocaml-editor-pad: 5.6rem; }
 body.mode-slides  { --x-ocaml-editor-pad: 0px; }
 
+/* The game worker is large enough that its cells may upgrade before the
+   worker can evaluate code. Keep controls inert until the first warm-up
+   response proves the runtime is ready. */
+body.game-chapter:not(.runtime-ready) x-ocaml,
+body.game-chapter:not(.runtime-ready) .cell-controls {
+  pointer-events: none;
+  opacity: .65;
+}
+
 /* Chapter-only scratchpad injected under write-code Activity slides
    (see injectActivityScratchCells in the page script). The wrapper
    never sits inside a section[data-slide], so it cannot reach the

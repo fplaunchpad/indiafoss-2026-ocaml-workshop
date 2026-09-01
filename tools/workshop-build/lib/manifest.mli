@@ -3,6 +3,7 @@
 type entry = {
   order : int;
   part : int option;
+  lab : bool;
   title : string;
   slug : string;
 }

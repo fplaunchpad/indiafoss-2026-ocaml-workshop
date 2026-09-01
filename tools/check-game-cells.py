@@ -16,8 +16,11 @@ GAME_LIB_STUB = r"""
 module Game_lib = struct
   type mouse = {
     pos : string;
-    drag : bool;
     button : [ `Left | `Right ];
+    shift : bool;
+    ctrl : bool;
+    alt : bool;
+    drag : bool;
   }
 
   let render (_ : string) = ()
@@ -246,15 +249,23 @@ def check_page(path: Path, ocamlc: str) -> tuple[int, int]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("pages", nargs="+", type=Path)
+    parser.add_argument("pages", nargs="*", type=Path)
     args = parser.parse_args()
+    pages = args.pages
+    if not pages:
+        pages = sorted(
+            page for page in (REPO / "_site").glob("*.html")
+            if 'class="mode-chapter game-chapter"' in page.read_text(encoding="utf-8")
+        )
+    if not pages:
+        parser.exit(1, "game-cell-check: no generated game pages found\n")
 
     try:
         ocamlc = find_ocamlc()
     except RuntimeError as error:
         parser.exit(1, f"game-cell-check: {error}\n")
 
-    for page in args.pages:
+    for page in pages:
         try:
             cell_count, quiz_count = check_page(page, ocamlc)
         except (OSError, ValueError, RuntimeError) as error:

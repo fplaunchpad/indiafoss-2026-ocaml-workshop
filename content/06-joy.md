@@ -3,6 +3,7 @@ title: "Joy: Creative Coding"
 concepts: [shapes, colors, transformations, higher-order functions]
 keywords: [OCaml, Joy, creative coding, generative art, SVG]
 toplevel_load: assets/x-ocaml/joy_core.js
+lab: true
 reading:
   - title: "ocaml-joy repository"
     url: https://github.com/Sudha247/ocaml-joy

@@ -4,6 +4,7 @@ duration_target_min: 45
 concepts: [lists, pattern matching, functional programming]
 keywords: [OCaml, game lab]
 game: true
+lab: true
 ---
 
 # Practice: Tic-Tac-Toe <span class="small">(list version)</span>
@@ -16,7 +17,7 @@ Need a refresher? Review [pattern matching](02-data-types.html#pattern-matching)
 
 Five small functions build the whole game: `current_player` runs the turn engine, `line_winner`, `winner`, and `no_empty_cells_left` feed `is_over`, which notices when the game has ended, and one stretch function, `best_move`, plays perfectly and can give you a hint.
 
-A reference solution sits collapsed under each problem if you get stuck. Give it a real attempt first, then open it -- opening or even running one has zero effect on the board, since solutions run in a "peek" mode that never touches your own bindings.
+A reference solution sits collapsed under each problem if you get stuck. Give it a real attempt first, then open it. Opening or even running one has zero effect on the board because solutions run in a "peek" mode that never touches your own bindings.
 
 Below you can read some of the important functions and definitions that you will have to use as you code up the solutions to the given functions.
 
@@ -201,7 +202,7 @@ let current_player b =
           if count X <= count O then X else O
 ```
 
-Counting each player's marks and comparing is simpler than tracking whose turn it is separately -- the board alone always tells you.
+Counting each player's marks and comparing is simpler than tracking whose turn it is separately; the board alone always tells you.
 
 :::
 ### Problem 2: `no_empty_cells_left`
@@ -357,7 +358,7 @@ let is_over b =
           winner b <> None || no_empty_cells_left b
 ```
 
-Either half being true is enough for `||` -- nothing here needs to know WHY `winner` or `no_empty_cells_left` came back the way they did, only what they returned.
+Either half being true is enough for `||`. Nothing here needs to know why `winner` or `no_empty_cells_left` returned their results, only what they returned.
 
 :::
 ### Stretch: `best_move`
@@ -415,6 +416,6 @@ let best_move b =
           |> Option.map fst
 ```
 
-`score` is a local helper, not a separate top-level function -- nothing outside `best_move` ever needs a bare position score, only the move that produces the best one. If `b` already has a winner, the player about to move here lost (`-1`). Otherwise, `List.filter_map` tries `apply_move` against every position 0 through 8 and drops the `None`s (already-taken squares) in the same pass, leaving one child board per legal move. Each child gets scored recursively (from the OTHER player's perspective) and *negated individually*, and only then does `List.fold_left max` pick the best of those negated values. Negating one child's score and negating the best of several children's raw scores are NOT the same number whenever the children disagree -- the negation has to happen per child, before the max, not once at the end. The outer fold repeats the same negate-then-compare one level up, to pick which of YOUR moves is best.
+`score` is a local helper, not a separate top-level function. Nothing outside `best_move` needs a bare position score, only the move that produces the best one. If `b` already has a winner, the player about to move here lost (`-1`). Otherwise, `List.filter_map` tries `apply_move` against every position 0 through 8 and drops the `None`s (already-taken squares) in the same pass, leaving one child board per legal move. Each child gets scored recursively from the other player's perspective and *negated individually*. Only then does `List.fold_left max` pick the best of those negated values. Negating one child's score and negating the best of several children's raw scores are not the same whenever the children disagree. The negation must happen per child, before the maximum is selected. The outer fold repeats the same negate-then-compare process one level up to select your best move.
 
 :::

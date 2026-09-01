@@ -85,7 +85,7 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
     <p class="eyebrow">IndiaFOSS 2026 · Beginner workshop</p>
     <h1>Fun and Profit with OCaml</h1>
     <p class="intro">New to OCaml? Start with Part 1. You can edit and run every
-      example in your browser—there is nothing to install.</p>
+      example in your browser; there is nothing to install.</p>
     <a class="start" href="01-basics.html">Start the workshop →</a>
     <h2>Or jump to a part</h2>
     <ol class="parts">
@@ -106,7 +106,7 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       <h2>Final 45-minute game lab</h2>
       <p>Choose one game. Tic-Tac-Toe is the recommended starting point;
         Game of Life is the challenge path. Complete the numbered problems
-        first—the stretch problems are optional. Joy is a third, open-ended
+        first; the stretch problems are optional. Joy is a third, open-ended
         option: a creative-coding sandbox that the session does not cover,
         for anyone who would rather draw than build a game.</p>
       <p><strong>Open your chosen game during the briefing. Your answers are

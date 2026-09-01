@@ -10,9 +10,7 @@ cd "$REPO_ROOT"
 python3 tools/check-links.py
 opam exec -- dune runtest
 tools/build-site.sh
-python3 tools/check-game-cells.py \
-  _site/05-game-of-life.html \
-  _site/04-tic-tac-toe.html
+python3 tools/check-game-cells.py
 
 PORT="${PORT:-8765}"
 python3 -m http.server "$PORT" --directory . >/dev/null 2>&1 &

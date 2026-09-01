@@ -16,6 +16,13 @@ let write_file path s =
   output_string oc s;
   close_out oc
 
+let contains ~needle haystack =
+  let n = String.length needle and h = String.length haystack in
+  let rec loop i =
+    i + n <= h && (String.sub haystack i n = needle || loop (i + 1))
+  in
+  n = 0 || loop 0
+
 (* Rewrite [src="/assets/...] and [href="/assets/...] attributes so
    they pick up the [asset_root] prefix that lecture-page CSS and JS
    already use. This lets ![alt](/assets/diagrams/foo.svg) in lecture
@@ -52,18 +59,35 @@ let check_part_frontmatter ~src (fm : Workshop_build.Frontmatter.t) =
         exit 1
       in
       if String.trim fm.title = "" then fail "frontmatter: missing title";
-      (match fm.part with
-      | Some n when n = part -> ()
-      | Some n ->
-          fail
-            (Printf.sprintf
-               "frontmatter: part %d does not match filename part %02d" n part)
-      | None -> ())
+      if fm.game && not fm.lab then
+        fail "frontmatter: game: true requires lab: true";
+      if fm.lab then
+        (match fm.part with
+         | None -> ()
+         | Some _ -> fail "frontmatter: lab pages must not set part")
+      else
+        (match fm.part with
+         | Some n when n = part -> ()
+         | Some n ->
+             fail
+               (Printf.sprintf
+                  "frontmatter: part %d does not match filename part %02d" n part)
+         | None -> fail "frontmatter: core chapters require part")
 
 let render_one ~src ~dst ~asset_root =
   let raw = read_file src in
   let fm, body = Workshop_build.Frontmatter.parse raw in
   check_part_frontmatter ~src fm;
+  if contains ~needle:":::game-panel" body && not fm.game then begin
+    Printf.eprintf
+      "%s: :::game-panel requires frontmatter game: true\n" src;
+    exit 1
+  end;
+  if fm.game && not (contains ~needle:":::game-panel" body) then begin
+    Printf.eprintf
+      "%s: frontmatter game: true requires a :::game-panel block\n" src;
+    exit 1
+  end;
   (* The body has had the YAML frontmatter stripped off; shift the
      line numbers we record in [data-quiz-line] back up to match
      the original file. The offset is (lines in raw) - (lines in body). *)
