@@ -517,13 +517,44 @@ let runtime_script ~asset_root =
     });
     function restorePersistedCells() {
       gcPersistedCells();
+      let restored = 0;
       for (const cell of allCells()) {
         const saved = localStorage.getItem(storageKey(cell));
         if (saved !== null && saved !== cell.getAttribute('data-source')) {
           cell.textContent = saved;
           dirtyButton(cell)?.classList.add('dirty');
+          restored++;
         }
       }
+      return restored;
+    }
+    // x-ocaml queues an initial format request with each cell's pristine
+    // source while upgrading. On a slow game worker that response can arrive
+    // after the early restore and overwrite the editor. Reapply only saved
+    // cells whose editor has diverged; the following sentinel round trip then
+    // places this source change back into the evaluated chain as well.
+    function reapplyDivergedPersistedCells() {
+      let reapplied = 0;
+      for (const cell of allCells()) {
+        const saved = localStorage.getItem(storageKey(cell));
+        if (saved === null || saved === cell.getAttribute('data-source')) continue;
+        const current = cellEditorText(cell);
+        if (current === saved) continue;
+        // A restored cell is legitimately passed through ocamlformat. If only
+        // whitespace changed, accept the worker's canonical spelling and save
+        // that, rather than fighting the formatter on every reload. A real
+        // source/comment change still differs after whitespace normalization
+        // and must be reapplied.
+        const compact = s => (s || '').replace(/\s+/g, ' ').trim();
+        if (current !== null && compact(current) === compact(saved)) {
+          localStorage.setItem(storageKey(cell), current);
+          continue;
+        }
+        cell.textContent = saved;
+        dirtyButton(cell)?.classList.add('dirty');
+        reapplied++;
+      }
+      return reapplied;
     }
 
     // Restore a cell to the source it was emitted with (carried on the
@@ -643,8 +674,26 @@ let runtime_script ~asset_root =
         if (ready) break;
         await new Promise(r => setTimeout(r, 100));
       }
-      restorePersistedCells();
+      const restoredCount = restorePersistedCells();
       await waitForRuntimeQuiescence();
+      if (restoredCount > 0) {
+        let stable = false;
+        // The stale pristine format response was observed roughly 700ms after
+        // restore. Require a full second of stability, with two bounded repair
+        // attempts, before promising that the runtime is ready.
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const reapplied = reapplyDivergedPersistedCells();
+          if (reapplied === 0) {
+            stable = true;
+            break;
+          }
+          await waitForRuntimeQuiescence();
+        }
+        if (!stable) {
+          throw new Error('saved cell source did not stabilize after restore');
+        }
+      }
       for (const c of allCells()) {
         injectCellStyle(c);
         watchCellForEdits(c);

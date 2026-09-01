@@ -224,11 +224,14 @@ try {
 
     if (failures.length) throw new Error(`${name}:\n${failures.join('\n')}`);
 
+    // Persistence must stand on its own. Use Problem 2, which the immediate
+    // Check regression above never edits, and wait beyond the historical
+    // delayed-format overwrite window before accepting the restored text.
     const marker = `(* saved-work-check-${path.replace(/\W/g, '-')} *)`;
-    const firstStudentEditor = page.locator('.quiz-code[data-quiz-id]').first()
+    const persistedStudentEditor = page.locator('.quiz-code[data-quiz-id]').nth(1)
       .locator('x-ocaml:not([data-quiz-test]):not([run-on="peek"])').last()
       .locator('.cm-content');
-    await firstStudentEditor.click();
+    await persistedStudentEditor.click();
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End');
     await page.keyboard.press('Enter');
     await page.keyboard.type(marker);
@@ -238,12 +241,13 @@ try {
     await page.waitForFunction(() => document.body.classList.contains('runtime-ready'),
       null, { timeout: 90_000 });
     await page.waitForFunction(() => {
-      const firstQuiz = document.querySelector('.quiz-code[data-quiz-id]');
-      const editable = Array.from(firstQuiz?.querySelectorAll('x-ocaml') || [])
+      const quiz = document.querySelectorAll('.quiz-code[data-quiz-id]')[1];
+      const editable = Array.from(quiz?.querySelectorAll('x-ocaml') || [])
         .filter(cell => !cell.hasAttribute('data-quiz-test') && cell.getAttribute('run-on') !== 'peek');
       return editable.at(-1)?.shadowRoot?.querySelector('.cm-content');
     }, null, { timeout: 90_000 });
-    const restored = await page.locator('.quiz-code[data-quiz-id]').first()
+    await page.waitForTimeout(1200);
+    const restored = await page.locator('.quiz-code[data-quiz-id]').nth(1)
       .locator('x-ocaml:not([data-quiz-test]):not([run-on="peek"])').last()
       .locator('.cm-content').innerText();
     if (!restored.includes(marker)) throw new Error(`${name}: saved work did not survive reload`);
