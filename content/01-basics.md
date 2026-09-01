@@ -2,8 +2,8 @@
 title: "OCaml Basics"
 part: 1
 duration_target_min: 30
-concepts: [bindings, type inference, conditionals, functions, recursion, labelled arguments, higher-order functions, currying, anonymous functions]
-keywords: [OCaml, functional programming, types, functions, recursion, List.map, partial application]
+concepts: [bindings, type inference, operators, conditionals, functions, recursion, labelled arguments, higher-order functions, currying, anonymous functions]
+keywords: [OCaml, functional programming, types, operators, functions, recursion, List.map, partial application]
 reading:
   - title: "Real World OCaml, A Guided Tour (numbers, let bindings, and type-inference sections)"
     url: https://dev.realworldocaml.org/guided-tour.html
@@ -128,6 +128,36 @@ let hello = "Hello"
 
 let unit = ()
 ```
+
+### Operators and comparisons
+
+OCaml deliberately keeps integer and floating-point arithmetic separate.
+This catches accidental mixing instead of silently converting one kind of
+number into the other. The common operators are:
+
+:::slide
+
+## Operators and comparisons
+
+```ocaml
+let int_arithmetic = (7 + 3, 7 - 3, 7 * 3, 7 / 3)
+let float_arithmetic = (7. +. 3., 7. -. 3., 7. *. 3., 7. /. 3.)
+let comparisons = (3 = 3, 3 <> 4, 3 < 4)
+let logic = true && (false || not false)
+```
+
+- Use `=` for value equality and `<>` for inequality, not `==` and `!=`.
+- Integer arithmetic uses `+`, `-`, `*`, `/` and `mod`; float arithmetic
+  uses the dotted forms `+.`, `-.`, `*.`, and `/.`.
+- Conditions must be `bool`; OCaml has no truthy integers or strings.
+
+:::
+
+The `==` operator tests physical identity, a lower-level question about
+whether two values are represented by the same object. It is rarely what a
+beginner wants; use `=` for ordinary equality comparisons. OCaml also has no
+implicit conversion between `int` and `float`, so convert explicitly with
+`float_of_int` or `int_of_float` when necessary.
 
 Observe that the types are inferred. One of the key features of
 OCaml is type inference and type checking. For example, checking

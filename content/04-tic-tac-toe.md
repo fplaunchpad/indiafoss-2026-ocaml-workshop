@@ -165,7 +165,10 @@ Open the provided game code below and press **Run** to render the board. You nee
 ### Problem 1: `current_player`
 
 :::quiz code id=ttt-q1
-As of right now, the gameboard takes every input to be `X`'s turn. To get the proper functionality, you must iterate through every cell in the game board `b` and identify which player has made fewer moves.
+`current_player : board -> player` returns whose turn comes next. **X always
+goes first.** Count both players' marks in the board `b`; if they have made the
+same number of moves, return `X`, otherwise return `O`. A single
+`List.fold_left` with a `(num_x, num_o)` accumulator can count both at once.
 
 ```ocaml
 let current_player b =
@@ -196,13 +199,20 @@ Reference solution:
 
 ```ocaml
 let current_player b =
-          let count p =
-          List.fold_left (fun acc c -> if c = Taken p then acc + 1 else acc) 0 b
+          let num_x, num_o =
+          List.fold_left
+          (fun (num_x, num_o) cell ->
+          match cell with
+          | Empty -> (num_x, num_o)
+          | Taken X -> (num_x + 1, num_o)
+          | Taken O -> (num_x, num_o + 1))
+          (0, 0) b
           in
-          if count X <= count O then X else O
+          if num_x <= num_o then X else O
 ```
 
-Counting each player's marks and comparing is simpler than tracking whose turn it is separately; the board alone always tells you.
+The tuple accumulator counts both kinds of mark in one pass. If the counts are
+equal, X moves; after X has one extra mark, O moves.
 
 :::
 ### Problem 2: `no_empty_cells_left`
@@ -286,7 +296,10 @@ Pattern-matching all three positions at once means the "all taken and all equal"
 ### Problem 4: `winner`
 
 :::quiz code id=ttt-q4
-Is there a winner anywhere on the board? Check every line in `winning_lines` with `line_winner`.
+`winner : board -> player option` checks every line in `winning_lines` with
+`line_winner`. Return `Some X` or `Some O` when a completed line is found, and
+`None` when the board has no winner. The result is the winning player, not a
+boolean.
 
 ```ocaml
 let winner b =
@@ -324,7 +337,10 @@ let winner b =
 ### Problem 5: `is_over`
 
 :::quiz code id=ttt-q5
-Is the game over? It ends one of two ways: someone's won, or the board is completely full with nobody winning (a draw). Build it from `winner` and `no_empty_cells_left`.
+`is_over : board -> bool` says whether the game has ended. Return `true` when
+someone has won or when the board is completely full with nobody winning (a
+draw); otherwise return `false`. Build it from `winner` and
+`no_empty_cells_left`.
 
 ```ocaml
 let is_over b =

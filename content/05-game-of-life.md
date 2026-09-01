@@ -344,7 +344,9 @@ Open the provided game code below and press **Run** to render the board. You nee
 ### Problem 1: `population`
 
 :::quiz code id=life-q1
-How many cells on the whole board are alive right now? You must iterate over every row and column for this.
+`population : grid -> int` returns how many cells on the whole board are alive
+right now. The argument `g` is the complete grid; iterate over every row and
+every cell and return the count.
 
 ```ocaml
 let population g =
@@ -382,7 +384,10 @@ This uses two `List.fold_left` calls. One counts the live cells in a single row.
 ### Problem 2: `count_live_neighbors`
 
 :::quiz code id=life-q2
-How many of the cell at `(r, c)`'s eight neighbors are alive? Use `wrap` so a cell right on the edge of the board still sees all eight.
+`count_live_neighbors : grid -> int -> int -> int` returns the number of live
+neighbors around one cell. Its arguments are the grid `g`, row `r`, and column
+`c`, in that order. Use `wrap` so a cell right on the edge of the board still
+sees all eight neighbors.
 
 ```ocaml
 let count_live_neighbors g r c =
@@ -427,7 +432,9 @@ let count_live_neighbors g r c =
 ### Problem 3: `next_cell_state`
 
 :::quiz code id=life-q3
-Given whether a cell is alive right now and how many live neighbors it has, is it alive next generation?
+`next_cell_state : bool -> int -> bool` decides whether one cell is alive in
+the next generation. `alive` is its current state and `live_neighbors` is its
+number of live neighbors; the returned boolean is its next state.
 
 - a live cell with 2 or 3 live neighbors survives; anything else dies
 - a dead cell with exactly 3 live neighbors is born

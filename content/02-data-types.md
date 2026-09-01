@@ -2,8 +2,8 @@
 title: "Data Types and Pattern Matching"
 part: 2
 duration_target_min: 50
-concepts: [variants, records, pattern matching, parameterised types, recursive types, lists, mutability, type aliases]
-keywords: [OCaml, algebraic data types, records, option, exhaustive matching, recursion]
+concepts: [variants, records, tuples, pattern matching, guards, parameterised types, recursive types, lists, mutability, type aliases]
+keywords: [OCaml, algebraic data types, records, tuples, option, exhaustive matching, recursion]
 reading:
   - title: "The OCaml manual, Data types section"
     url: https://ocaml.org/manual/5.5/coreexamples.html#s%3Adatatypes
@@ -51,10 +51,11 @@ let red = Red
 ```
 
 - A variant value is in exactly one of a fixed set of forms.
-- Each form is named by a constructor, written with a capital
-  letter.
+- Each form is named by a constructor, which **must** start with a capital
+  letter; lowercase is a syntax error, not merely a style convention.
 - The type lists every constructor, which is what lets the
   compiler check a `match` for completeness.
+- A variant is closest to a Rust `enum` or a Java sealed hierarchy.
 
 :::
 
@@ -91,6 +92,8 @@ type point = {
 - Each field is declared with its own type.
 - The field names are part of the type, so `point` is distinct
   from any other record with three `int` fields.
+- It resembles a Rust/C struct, Python dataclass or Java record,
+  and is immutable unless a field is explicitly marked `mutable`.
 
 :::
 
@@ -173,6 +176,32 @@ with
 ```ocaml
 let mk_point x y z = { x; y; z }
 ```
+
+## Tuples
+
+A tuple groups a fixed number of values without naming the fields. Its type
+uses `*`, and its value and pattern use commas. Tuples are useful for small,
+local combinations such as a pair of counters; use a record when field names
+would make the meaning clearer.
+
+:::slide
+
+## Tuples
+
+```ocaml
+let score = (3, 2)
+
+let describe_score (x, o) =
+  Printf.sprintf "X: %d, O: %d" x o
+
+let x_score = fst score
+```
+
+- `score` has type `int * int`.
+- `(x, o)` destructures the pair and names both components.
+- This is like a tuple in Python or Rust; `fst` and `snd` work on pairs.
+
+:::
 
 ## Variants with data
 
@@ -335,6 +364,30 @@ let () = print_t (Colour Red)
 
 let () = print_t (Colour Blue)
 ```
+
+### Pattern guards
+
+A branch may add a boolean condition with `when`. The branch is selected only
+when both its pattern and its guard match. Guards are useful when the shape of
+the data is not enough by itself:
+
+:::slide
+
+## Pattern guards
+
+```ocaml
+let sign n =
+  match n with
+  | n when n < 0 -> "negative"
+  | 0 -> "zero"
+  | _ -> "positive"
+```
+
+- `when n < 0` is a guard on the first pattern.
+- Guards are tested from top to bottom, like the surrounding branches.
+- Keep the fallback branch: guards do not make a match exhaustive.
+
+:::
 
 ### Matching records
 
@@ -524,6 +577,9 @@ let co = Some Green
 - Supplying it gives a concrete type: `int option`,
   `colour option`, and so on.
 - One definition serves every element type.
+- Use an `option` where many languages might use `null`: `None` means
+  “no value”, while `Some x` carries a value. `None` is not a universal null;
+  it belongs only to an `option` type.
 
 :::
 
