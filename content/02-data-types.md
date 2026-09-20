@@ -203,6 +203,53 @@ let x_score = fst score
 
 :::
 
+:::slide
+
+:::quiz code id=data-types-shift
+Write `shift : point -> int * int -> point` which moves a point by
+the given pair of offsets in the `x` and `y` directions, leaving
+its `z` field untouched.
+
+```ocaml
+let shift p (dx, dy) = failwith "not implemented"
+```
+
+```ocaml skip
+let check b m = if not b then failwith m
+
+let () =
+  check
+    (shift { x = 0; y = 0; z = 0 } (2, 3) = { x = 2; y = 3; z = 0 })
+    "shift the origin";
+  check
+    (shift { x = 1; y = 1; z = 5 } (-1, 4) = { x = 0; y = 5; z = 5 })
+    "shift leaves z alone";
+  check
+    (shift { x = 7; y = 8; z = 9 } (0, 0) = { x = 7; y = 8; z = 9 })
+    "shift by (0, 0)";
+  print_endline "all tests passed"
+```
+:::
+
+:::
+
+:::slide
+
+:::solution
+
+Only `x` and `y` change, so this is what functional update is for:
+`{ p with ... }` carries `z` over unchanged. The pair of offsets is
+taken apart by the parameter pattern `(dx, dy)`, so there is no
+need for `fst` and `snd`.
+
+```ocaml
+let shift p (dx, dy) = { p with x = p.x + dx; y = p.y + dy }
+```
+
+:::
+
+:::
+
 ## Variants with data
 
 ### Constructor arguments
@@ -223,7 +270,7 @@ type t =
 
 let p_or_c cond pnt col = if cond then Point pnt else Colour col
 
-let p = p_or_c (1 > 0) origin red
+let p = p_or_c true origin red
 ```
 
 - Variant constructors can have arguments.
@@ -242,13 +289,15 @@ the `*` symbol:
 ## Multiple constructor arguments
 
 ```ocaml
-type s =
-| ThreePoints of point * point * point
-| TwoColours of colour * colour
+type drawing =
+| Triangle of point * point * point
+| Gradient of colour * colour
 
-let s = TwoColours(Red, Green)
+let bg = Gradient (Red, Green)
 ```
 
+- A `Triangle` carries its three corners; a `Gradient` carries the
+  two colours it fades between.
 - Separate several arguments with `*` in the declaration.
 - Building such a constructor needs parentheses around the
   arguments.
@@ -256,16 +305,16 @@ let s = TwoColours(Red, Green)
 :::
 
 ```ocaml
-type s =
-| ThreePoints of point * point * point
-| TwoColours of colour * colour
+type drawing =
+| Triangle of point * point * point
+| Gradient of colour * colour
 ```
 
 Creating these constructors with multiple arguments requires
 parentheses:
 
 ```ocaml
-let s = TwoColours(Red, Green)
+let bg = Gradient (Red, Green)
 ```
 
 ## Pattern matching
@@ -295,6 +344,7 @@ retrieve its constructor's arguments:
 ## Inspecting variants
 
 ```ocaml
+let show s = print_endline s
 let print_t t =
   match t with
   | Point p -> show (Printf.sprintf "Point: %d %d %d" p.x p.y p.z)
@@ -365,6 +415,51 @@ let () = print_t (Colour Red)
 let () = print_t (Colour Blue)
 ```
 
+### Exhaustiveness
+
+A key feature of pattern matching, which can help prevent many
+errors especially when refactoring, is that the compiler will warn
+you if you forget to handle a particular case. For example, if we
+had forgotten the `Colour Green` case in the above definition:
+
+:::slide
+
+## Exhaustiveness
+
+```ocaml
+let print_t_ t =
+  match t with
+  | Point p -> show (Printf.sprintf "Point: %d %d %d" p.x p.y p.z)
+  | Colour Red -> show (Printf.sprintf "Red")
+  | Colour Blue -> show (Printf.sprintf "Blue")
+```
+```mdx-error
+Lines 2-5, characters 5-50:
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: Colour Green
+```
+
+- The compiler knows every constructor, so it can tell when a
+  `match` misses one.
+- It names an unmatched example, here `Colour Green`.
+- This is what makes adding a constructor safe: every incomplete
+  `match` is reported.
+
+:::
+
+```ocaml
+let print_t_ t =
+  match t with
+  | Point p -> show (Printf.sprintf "Point: %d %d %d" p.x p.y p.z)
+  | Colour Red -> show (Printf.sprintf "Red")
+  | Colour Blue -> show (Printf.sprintf "Blue")
+```
+```mdx-error
+Lines 2-5, characters 5-50:
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched: Colour Green
+```
+
 ### Pattern guards
 
 A branch may add a boolean condition with `when`. The branch is selected only
@@ -422,51 +517,6 @@ let print_t t =
   | Colour Red -> show (Printf.sprintf "Red")
   | Colour Green -> show (Printf.sprintf "Green")
   | Colour Blue -> show (Printf.sprintf "Blue")
-```
-
-### Exhaustiveness
-
-A key feature of pattern matching, which can help prevent many
-errors especially when refactoring, is that the compiler will warn
-you if you forget to handle a particular case. For example, if we
-had forgotten the `Colour Green` case in the above definition:
-
-:::slide
-
-## Exhaustiveness
-
-```ocaml
-let print_t_ t =
-  match t with
-  | Point { x; y; z } -> show (Printf.sprintf "Point: %d %d %d" x y z)
-  | Colour Red -> show (Printf.sprintf "Red")
-  | Colour Blue -> show (Printf.sprintf "Blue")
-```
-```mdx-error
-Lines 2-5, characters 5-50:
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched: Colour Green
-```
-
-- The compiler knows every constructor, so it can tell when a
-  `match` misses one.
-- It names an unmatched example, here `Colour Green`.
-- This is what makes adding a constructor safe: every incomplete
-  `match` is reported.
-
-:::
-
-```ocaml
-let print_t_ t =
-  match t with
-  | Point { x; y; z } -> show (Printf.sprintf "Point: %d %d %d" x y z)
-  | Colour Red -> show (Printf.sprintf "Red")
-  | Colour Blue -> show (Printf.sprintf "Blue")
-```
-```mdx-error
-Lines 2-5, characters 5-50:
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched: Colour Green
 ```
 
 ### The `_` pattern
@@ -732,6 +782,67 @@ let rec depth tr =
 
 :::
 
+:::slide
+
+## Computing a tree's depth
+
+<div class="cols">
+<div class="col" style="flex: 0 0 58%;">
+
+```ocaml
+let n4 = Tree (Leaf, 4, Leaf)
+let n2 = Tree (Leaf, 2, n4)
+let n3 = Tree (Leaf, 3, Leaf)
+let tree = Tree (n2, 1, n3)
+
+let d = depth tree
+```
+
+</div>
+<div class="col">
+
+<svg viewBox="0 0 296 192" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Binary tree: root 1 has children 2 and 3; node 2 has a Leaf and the child 4; node 4 has two Leaf children; node 3 has two Leaf children. The longest path from the root to a Leaf runs 1, 2, 4, Leaf and spans four levels." fill="none" stroke="currentColor" style="width:100%;max-width:400px;height:auto">
+<text x="6" y="27" font-size="8" fill="currentColor" stroke="none" opacity=".4">1</text>
+<text x="6" y="75" font-size="8" fill="currentColor" stroke="none" opacity=".4">2</text>
+<text x="6" y="123" font-size="8" fill="currentColor" stroke="none" opacity=".4">3</text>
+<text x="6" y="171" font-size="8" fill="currentColor" stroke="none" opacity=".4">4</text>
+<line x1="138.7" y1="33.9" x2="106.3" y2="62.1" stroke-width="1.9" opacity="1"/>
+<line x1="163.1" y1="31.4" x2="221.9" y2="64.6" stroke-width="0.9" opacity="0.4"/>
+<line x1="85.4" y1="83.5" x2="64.0" y2="109.2" stroke-width="0.9" opacity="0.4"/>
+<line x1="104.6" y1="83.5" x2="125.4" y2="108.5" stroke-width="1.9" opacity="1"/>
+<line x1="227.1" y1="84.7" x2="212.4" y2="108.1" stroke-width="0.9" opacity="0.4"/>
+<line x1="242.9" y1="84.7" x2="257.6" y2="108.1" stroke-width="0.9" opacity="0.4"/>
+<line x1="127.1" y1="132.7" x2="112.4" y2="156.1" stroke-width="1.9" opacity="1"/>
+<line x1="142.9" y1="132.7" x2="157.6" y2="156.1" stroke-width="0.9" opacity="0.4"/>
+<circle cx="150" cy="24" r="15" stroke-width="1.9" opacity="1"/>
+<text x="150" y="28" font-size="12" text-anchor="middle" fill="currentColor" stroke="none" opacity="1">1</text>
+<circle cx="95" cy="72" r="15" stroke-width="1.9" opacity="1"/>
+<text x="95" y="76" font-size="12" text-anchor="middle" fill="currentColor" stroke="none" opacity="1">2</text>
+<circle cx="235" cy="72" r="15" stroke-width="0.9" opacity="0.4"/>
+<text x="235" y="76" font-size="12" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.55">3</text>
+<circle cx="55" cy="120" r="14" stroke-width="0.9" opacity="0.4" stroke-dasharray="2.5 2"/>
+<text x="55" y="123" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.55">Leaf</text>
+<circle cx="135" cy="120" r="15" stroke-width="1.9" opacity="1"/>
+<text x="135" y="124" font-size="12" text-anchor="middle" fill="currentColor" stroke="none" opacity="1">4</text>
+<circle cx="205" cy="120" r="14" stroke-width="0.9" opacity="0.4" stroke-dasharray="2.5 2"/>
+<text x="205" y="123" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.55">Leaf</text>
+<circle cx="265" cy="120" r="14" stroke-width="0.9" opacity="0.4" stroke-dasharray="2.5 2"/>
+<text x="265" y="123" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.55">Leaf</text>
+<circle cx="105" cy="168" r="14" stroke-width="1.9" opacity="1" stroke-dasharray="2.5 2"/>
+<text x="105" y="171" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" opacity="1">Leaf</text>
+<circle cx="165" cy="168" r="14" stroke-width="0.9" opacity="0.4" stroke-dasharray="2.5 2"/>
+<text x="165" y="171" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.55">Leaf</text>
+</svg>
+
+</div>
+</div>
+
+- `Leaf` returns `1`, so a leaf counts as a level of its own.
+- The highlighted path 1 -> 2 -> 4 -> `Leaf` is the longest in this
+  tree: four levels, so `d` is `4`.
+
+:::
+
 ```ocaml
 let rec depth tr =
   match tr with
@@ -739,15 +850,15 @@ let rec depth tr =
   | Tree(left, _, right) ->
       1 + (max (depth left) (depth right))
 
-let tree : colour binary_tree =
+let tree : int binary_tree =
   Tree(Tree(Leaf,
-            Blue,
+            2,
             Tree(Leaf,
-                 Red,
+                 4,
                  Leaf)),
-       Red,
+       1,
        Tree(Leaf,
-            Green,
+            3,
             Leaf))
 
 let d = depth tree
@@ -769,8 +880,12 @@ front of the list:
 
 ```ocaml
 let l = 1 :: 2 :: 3 :: []
+let nil = []
+let l = 1 :: 2 :: 3 :: nil
 ```
 
+- Every function on lists is documented in the
+  [OCaml manual's `List` module](https://ocaml.org/manual/5.2/api/List.html).
 - `list` is a parameterised recursive variant type with two
   constructors, `::` (cons) and `[]` (nil).
 - `[]` represents an empty list; `::` adds an element to the front
@@ -798,8 +913,8 @@ elements of an `int list`:
 ```ocaml
 let rec sum il =
   match il with
-  | [] -> 0
-  | i :: rest -> i + (sum rest)
+  | [] -> 0 (* empty list *)
+  | i :: rest -> i + (sum rest) 
 ```
 
 - `[]` and `::` are ordinary constructors, so they work as
@@ -812,8 +927,8 @@ let rec sum il =
 ```ocaml
 let rec sum il =
   match il with
-  | [] -> 0
-  | i :: rest -> i + (sum rest)
+  | [] -> 0 (* empty list *)
+  | i :: rest -> (* head + sum of tail *) i + (sum rest)
 
 let s = sum l
 ```
