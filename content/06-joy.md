@@ -12,8 +12,8 @@ reading:
 # Joy: creative coding
 
 [Joy](https://github.com/Sudha247/ocaml-joy) is a small creative-coding
-library for OCaml by Sudha Parimala and Kaustubh Maske Patil (MIT
-license). You describe pictures as values: shapes that you combine and
+library for OCaml by Sudha Parimala, Fay Carsons and Kaustubh Maske Patil
+(MIT license). You describe pictures as values: shapes that you combine and
 transform with ordinary functions, then render as SVG right below the
 code.
 
