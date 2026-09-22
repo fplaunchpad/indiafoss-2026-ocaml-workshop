@@ -165,6 +165,17 @@ body.mode-slides .reveal .slides .title-slide-instructor {
   margin: 0;
   line-height: 1.4;
 }
+body.mode-slides .reveal .slides .title-slide-url {
+  font-family: monospace;
+  font-size: 1.3rem;
+  color: var(--link, #0d6b6b);
+  margin: 0 0 0.6rem 0;
+}
+body.mode-slides .reveal .slides .title-slide-qr {
+  width: 160px;
+  height: 160px;
+  margin: 0;
+}
 
 body.mode-slides x-ocaml {
   /* em (not rem) so the cell font scales with the slide body
