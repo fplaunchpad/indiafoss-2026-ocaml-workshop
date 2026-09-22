@@ -15,7 +15,8 @@
      autorun     - run automatically on cell mount
      hidden      - present in DOM but not visually rendered
      non-deterministic - tolerated for ocaml-mdx CI parity
-     skip        - ocaml-mdx label; we treat it as "do not auto-run".
+     skip        - ocaml-mdx label; emitted as [data-skip="true"] so
+                   the runtime can exclude the cell from auto-evaluation.
      quiz-test   - synthesised by [Divs.preprocess] for the 2nd+
                    ocaml fence inside a [:::quiz code] block. Rendered
                    as [hidden] + [data-quiz-test="true"]; the quiz
@@ -76,7 +77,10 @@ let render_x_ocaml ~code ~attrs =
       let attrs = List.remove_assoc "skip" attrs in
       if List.mem_assoc "hidden" attrs then attrs
       else ("hidden", "true") :: attrs
-    else List.remove_assoc "skip" attrs
+    else
+      let has_skip = List.mem_assoc "skip" attrs in
+      let attrs = List.remove_assoc "skip" attrs in
+      if has_skip then ("data-skip", "true") :: attrs else attrs
   in
   let buf = Buffer.create 256 in
   Buffer.add_string buf "<x-ocaml";

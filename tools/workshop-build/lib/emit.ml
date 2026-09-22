@@ -267,9 +267,10 @@ let runtime_script ~asset_root =
     function allCells() {
       // The hidden runtime sentinel is an implementation detail, not an
       // editable workshop cell. Keep it out of persistence, toolbar actions,
-      // reset buttons, and quiz bookkeeping.
+      // reset buttons, and quiz bookkeeping. Cells marked [data-skip] are
+      // error demonstrations that must not participate in auto-evaluation.
       return Array.from(document.querySelectorAll(
-        'x-ocaml:not([data-runtime-sentinel])'));
+        'x-ocaml:not([data-runtime-sentinel]):not([data-skip])'));
     }
 
     // Hide slide area until x-ocaml has finished reflowing each
