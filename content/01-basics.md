@@ -2,7 +2,7 @@
 title: "OCaml Basics"
 part: 1
 duration_target_min: 30
-concepts: [bindings, type inference, operators, conditionals, functions, recursion, labelled arguments, higher-order functions, currying, anonymous functions]
+concepts: [bindings, type inference, operators, conditionals, functions, recursion, labelled arguments, anonymous functions, higher-order functions, currying]
 keywords: [OCaml, functional programming, types, operators, functions, recursion, List.map, partial application]
 reading:
   - title: "Real World OCaml, A Guided Tour (numbers, let bindings, and type-inference sections)"
@@ -34,13 +34,13 @@ Let's begin with a tour through the basics of the OCaml programming language.
 
 ## Why OCaml
 
-- An industrial-strength functional language, in the same family
-  as Haskell and Standard ML.
-- Multi-paradigm: functional, imperative and object-oriented.
-- Compiles to fast native code (x86, ARM, RISC-V) and to
-  JavaScript.
-- Used in production at Jane Street, Microsoft, Facebook and
-  Docker, and by Coq, CompCert and MirageOS.
+- A functional language in the same family as Haskell and Standard ML.
+- Functional-first but multi-paradigm (imperative and object-oriented).
+- Statically typed with Hindley-Milner type inference.
+- Compiles to native code (x86, ARM, RISC-V), JavaScript and WASM.
+- Industrial-strength: Used at Jane Street, Meta, Microsoft,
+  Ahrefs, Citrix, Tezos, Bloomberg, Docker.
+- OCaml has also been in space! 🚀
 
 :::
 
@@ -62,7 +62,7 @@ first-class functions, algebraic data types, pattern matching and
 type inference) also appear in languages such as C++, Java, Python,
 Rust, Kotlin and Elixir.
 
-## Variables
+## Variables and Primitive types
 
 ### Let binding
 
@@ -75,11 +75,10 @@ introduced using the let keyword.
 ## Let binding
 
 ```ocaml
-let pi = 3
+let x = 3
 ```
 
-- `pi` is now bound to the value `3`.
-- Its type has also been inferred as `int`.
+- `x` is now bound to the value `3`.
 
 :::
 
@@ -88,91 +87,143 @@ code that can refer to that binding. The scope of top-level let
 bindings (like the one above) is everything that follows it.
 
 ```ocaml
-2 * pi * 5
+2 * x * 5
 ```
 
-### Primitive data types
-
-OCaml offers the following primitive data types: int, float,
-bool, char, string and unit.
+### Floats and ints
 
 :::slide
 
-## Primitive data types
+## Floats and ints
 
 ```ocaml
-let one = 1
+let x = 3
 let pi = 3.1415
-let a = 'a'
-let hello = "Hello"
 ```
 
-- Six primitives: `int`, `float`, `bool`, `char`, `string` and
-  `unit`.
-- Every type here was inferred; none of them was written down.
-- No implicit conversion between them, so `one = pi` is a
-  compile error rather than `false`.
+- `x` is inferred as `int`, `pi` as `float`.
 
 :::
 
-```ocaml
-let one = 1
+Observe that the types are inferred. One of the key features of
+OCaml is type inference and type checking.
 
-let pi = 3.1415
-
-let are_you_awesome = true
-
-let a = 'a'
-
-let hello = "Hello"
-
-let unit = ()
-```
-
-### Operators and comparisons
-
-OCaml deliberately keeps integer and floating-point arithmetic separate.
-This catches accidental mixing instead of silently converting one kind of
-number into the other. The common operators are:
+### Working with numbers
 
 :::slide
 
-## Operators and comparisons
+## Working with numbers
 
 ```ocaml
-let int_arithmetic = (7 + 3, 7 - 3, 7 * 3, 7 / 3)
-let float_arithmetic = (7. +. 3., 7. -. 3., 7. *. 3., 7. /. 3.)
-let comparisons = (3 = 3, 3 <> 4, 3 < 4)
+let x = 7 + 3
+let y = 7. +. 3.
+```
+
+- Integer arithmetic: `+` `-` `*` `/` `mod`
+- Float arithmetic: `+.` `-.` `*.` `/.`
+- No implicit conversion: `x + y` is a compile error.
+
+:::
+
+OCaml deliberately keeps integer and floating-point arithmetic separate.
+This catches accidental mixing instead of silently converting one kind of
+number into the other. There is no implicit conversion between `int` and
+`float`, so convert explicitly with `float_of_int` or `int_of_float`
+when necessary.
+
+For example, checking the equality of incompatible types fails with a
+compile time error.
+
+```ocaml skip
+x = pi
+```
+
+```mdx-error
+Line 1, characters 4-6:
+Error: This expression has type float but an expression was
+       expected of type int
+```
+
+:::slide
+
+:::quiz code id=basics-area
+Compute the area of this circle that has a radius of 6.0 units (hint: *area = π × r²*)
+
+```ocaml
+let pi = 3.1415
+let radius = 6.0
+let area = failwith "not implemented"
+```
+
+```ocaml skip
+let check b m = if not b then failwith m
+let () =
+  check (Float.abs (area -. 113.094) < 0.01) "area of circle with radius 6.0";
+  print_endline "all tests passed"
+```
+:::
+
+:::solution
+```ocaml
+let pi = 3.1415
+let radius = 6.0
+let area = pi *. radius *. radius
+```
+:::
+
+:::
+
+### Comparisons and booleans
+
+:::slide
+
+## Comparisons and booleans
+
+```ocaml
+let eq = (3 = 3)
+let are_you_awesome = true
 let logic = true && (false || not false)
 ```
 
-- Use `=` for value equality and `<>` for inequality, not `==` and `!=`.
-- Integer arithmetic uses `+`, `-`, `*`, `/` and `mod`; float arithmetic
-  uses the dotted forms `+.`, `-.`, `*.`, and `/.`.
+- Use `=` for value equality and `<>` for inequality.
 - Conditions must be `bool`; OCaml has no truthy integers or strings.
 
 :::
 
 The `==` operator tests physical identity, a lower-level question about
 whether two values are represented by the same object. It is rarely what a
-beginner wants; use `=` for ordinary equality comparisons. OCaml also has no
-implicit conversion between `int` and `float`, so convert explicitly with
-`float_of_int` or `int_of_float` when necessary.
+beginner wants; use `=` for ordinary equality comparisons.
 
-Observe that the types are inferred. One of the key features of
-OCaml is type inference and type checking. For example, checking
-the equality of incompatible types fails with a compile time
-error.
+### Characters and strings
 
-```ocaml skip
-one = pi
+:::slide
+
+## Characters and strings
+
+```ocaml
+let a = 'a'
+let hello = "Hello"
 ```
 
-```mdx-error
-Line 1, characters 6-8:
-Error: This expression has type float but an expression was
-       expected of type int
+- `char` uses single quotes, `string` uses double quotes.
+
+:::
+
+### Unit
+
+:::slide
+
+## Unit
+
+```ocaml
+let () = print_endline "hello"
 ```
+
+- `unit` has exactly one value: `()`.
+- It is the type of side effects — functions that do something
+  but return nothing useful.
+
+:::
 
 :::slide
 
@@ -236,41 +287,48 @@ limited to a particular expression using the *in* keyword:
 ## Local `let ... in` binding
 
 ```ocaml
-let i =
-  let j = 5 in
-  j + 2
+(* area of a square *)
+let area =
+  let side = 5 in
+  side * side
 ```
 
 - A `let` binding's scope can be limited to a particular
   expression using the `in` keyword.
-- Only `i` is bound at the top level; `j` is no longer in scope
-  once the `in` expression has finished.
+- Only `area` is bound at the top level; `side` is no longer in
+  scope once the `in` expression has finished.
 
 :::
 
-As you can see from the output, only i has been bound to a value
-at the top-level. The j variable is no longer in scope:
+As you can see from the output, only `area` has been bound to a value
+at the top-level. The `side` variable is no longer in scope:
 
 ```ocaml skip
-j+4
+side + 1
 ```
 
 :::slide
 
 :::quiz mcq id=basics-q2
-After evaluating `let i = let j = 5 in j + 2`, what happens if you
-then try to evaluate `j + 4` at the top level?
 
-- [x] Compile error: `j` is unbound outside the `let ... in`
+```ocaml
+let area =
+  let side = 5 in
+  side * side
+```
+
+After evaluating this, what happens if you try to evaluate `side + 1` at the top level?
+
+- [x] Compile error: `side` is unbound outside the `let ... in`
       expression.
-- [ ] It evaluates to `9`, since `j` was `5`.
-- [ ] It evaluates to `4`, treating the missing `j` as `0`.
-- [ ] It silently shadows `i`.
+- [ ] It evaluates to `6`, since `side` was `5`.
+- [ ] It evaluates to `1`, treating the missing `side` as `0`.
+- [ ] It silently shadows `area`.
 
-**Why:** `j` is local to the body of the `let ... in` expression.
-Once that expression finishes evaluating, `j` goes out of scope;
-only `i` (bound to `7`) remains visible at the top level.
-Referring to `j` afterwards is a compile-time "Unbound value j"
+**Why:** `side` is local to the body of the `let ... in` expression.
+Once that expression finishes evaluating, `side` goes out of scope;
+only `area` (bound to `25`) remains visible at the top level.
+Referring to `side` afterwards is a compile-time "Unbound value side"
 error.
 :::
 
@@ -286,19 +344,25 @@ if keyword:
 ## Conditionals
 
 ```ocaml
-let a = if i < 10 then i else 10
+let time_of_day = 14 (* 14 hours = 2 pm *)
+
+let greeting =
+  if time_of_day < 12 then "Good morning"
+  else "Good afternoon"
 ```
 
 - `if` is an expression: it evaluates to a value, so it can go
   anywhere a value can, including on the right of a `let`.
 - Both branches must have the same type.
-- There is no statement form of `if`; it always produces a
-  value.
 
 :::
 
 ```ocaml
-let a = if i < 10 then i else 10
+let time_of_day = 14 (* 14 hours = 2 pm *)
+
+let greeting =
+  if time_of_day < 12 then "Good morning"
+  else "Good afternoon"
 ```
 
 ## Functions
@@ -353,6 +417,34 @@ let add x y = x + y
 let add x y = x + y
 ```
 
+:::slide
+
+:::quiz code id=basics-max
+Implement `max_of_two : int -> int -> int`, which returns the
+larger of its two arguments.
+
+```ocaml
+let max_of_two x y = failwith "not implemented"
+```
+
+```ocaml skip
+let check b m = if not b then failwith m
+let () =
+  check (max_of_two 3 7 = 7) "max_of_two 3 7";
+  check (max_of_two 10 2 = 10) "max_of_two 10 2";
+  check (max_of_two 5 5 = 5) "max_of_two 5 5";
+  print_endline "all tests passed"
+```
+:::
+
+:::solution
+```ocaml
+let max_of_two x y = if x > y then x else y
+```
+:::
+
+:::
+
 ### Function application
 
 Function application is written by placing each argument after the
@@ -364,8 +456,8 @@ function-call syntax:
 ## Function application
 
 ```ocaml
-let b = succ 8
-let c = add a b
+let a = succ 8
+let b = add a 2
 ```
 
 - The idiomatic spelling is `succ 8`. The expression `succ (8)` also
@@ -601,6 +693,36 @@ let modulo ~dividend ~divisor =
 
 :::
 
+### Anonymous functions
+
+Instead of defining each function with a `let`, it is often
+handy to define functions on the fly. OCaml has support for
+anonymous functions, which allows you to define unnamed
+functions. To write an anonymous function, the `fun` keyword is
+used in the following form `(fun ARG1 ARG2 ... -> BODY)`:
+
+:::slide
+
+## Anonymous functions
+
+```ocaml
+let succ = fun x -> x + 1
+
+let nine = (fun x -> x + 1) 8
+```
+
+- `(fun ARG1 ARG2 ... -> BODY)` builds a function with no name.
+- An anonymous function can be bound to a name or applied
+  directly.
+
+:::
+
+```ocaml
+let succ = fun x -> x + 1
+
+let nine = (fun x -> x + 1) 8
+```
+
 ### Higher-order functions
 
 Since OCaml is a functional language, functions are regular
@@ -621,12 +743,16 @@ numbers in the list `[1; 2; 3]`:
 
 ```ocaml
 let l = List.map succ [1;2;3]
+
+let l2 = List.map (fun x -> x * 2) [1;2;3]
 ```
 
 - Functions are regular values, so they can be passed as
   arguments to other functions ("higher-order functions").
 - `List.map` takes a function and a list, and returns a new list
   created by applying the function to each element of the list.
+- Anonymous functions are especially handy here: no need to
+  define a named function just to use it once.
 
 :::
 
@@ -700,30 +826,3 @@ exactly how `let succ = add 1` works.
 :::
 
 :::
-
-### Anonymous functions
-
-Instead of defining each function with a `let`, it is often
-handy to define functions on the fly. OCaml has support for
-anonymous functions, which allows you to define unnamed
-functions. To write an anonymous function, the `fun` keyword is
-used in the following form `(fun ARG1 ARG2 ... -> BODY)`. We can
-define an anonymous function for `succ` and use it as follows:
-
-:::slide
-
-## Anonymous functions
-
-```ocaml
-List.map (fun x -> x + 1) [1;2;3]
-```
-
-- `(fun ARG1 ARG2 ... -> BODY)` builds a function with no name.
-- Useful when a function is needed once, as an argument to
-  something like `List.map`.
-
-:::
-
-```ocaml
-List.map (fun x -> x + 1) [1;2;3]
-```
