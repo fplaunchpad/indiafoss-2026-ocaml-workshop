@@ -369,6 +369,7 @@ let population grid =
           failwith "not implemented"
           in
           let rec count_grid grid =
+          ignore count_row;
           failwith "not implemented"
           in
           count_grid grid
