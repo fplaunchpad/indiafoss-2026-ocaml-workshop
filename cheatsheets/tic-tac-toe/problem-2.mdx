@@ -1,0 +1,38 @@
+---
+title: "Problem 2"
+---
+
+# Problem 2: Guards (`when`)
+
+For `line_winner`.
+
+## Matching several values at once
+
+When the answer depends on a combination of values, match a tuple
+of them in one go instead of nesting several matches.
+
+```ocaml
+let combine a b =
+  match a, b with
+  | None,   None   -> "both empty"
+  | Some _, None   -> "first only"
+  | None,   Some _ -> "second only"
+  | Some _, Some _ -> "both present"
+```
+
+`match a, b with` is shorthand for `match (a, b) with`. `line_winner`
+needs the same idea for three values: the cells at positions `i`,
+`j`, and `k`.
+
+## The `when` guard
+
+A pattern checks shape: "this is `Taken` of something." A guard adds
+a boolean check on top of a pattern, evaluated only if the pattern
+already matched.
+
+```ocaml
+let sign = function
+  | n when n > 0 -> "positive"
+  | n when n < 0 -> "negative"
+  | _ -> "zero"
+```

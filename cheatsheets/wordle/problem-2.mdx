@@ -1,0 +1,51 @@
+---
+title: "Problem 2"
+---
+
+# Problem 2: `Array.init` and strings as characters
+
+For `score_guess`, first pass.
+
+## Building an array from a function
+
+`Array.init n f` builds a new array of length `n` whose element `i` is
+`f i`, for every `i` from `0` to `n - 1`.
+
+```ocaml
+let squares = Array.init 5 (fun i -> i * i)
+(* [| 0; 1; 4; 9; 16 |] *)
+```
+
+This is the array equivalent of `List.init`, and it's the natural
+shape for "compute one output per position, from that position's own
+index" -- exactly what scoring a guess does: one `letter_status` per
+letter position.
+
+## A string is indexable, one character at a time
+
+`s.[i]` reads the character at position `i` of string `s` (0-indexed,
+like an array). `String.length s` gives the number of characters.
+
+```ocaml
+let s = "hello"
+let _ = s.[0]            (* = 'h' *)
+let _ = String.length s  (* = 5 *)
+```
+
+Characters have their own type, `char`, written with single quotes
+(`'h'`, not `"h"`). Comparing two characters with `=` works exactly
+like comparing two integers or strings.
+
+## Searching a string
+
+`String.contains s c` answers "does character `c` occur anywhere in
+string `s`?" directly, with no loop to write.
+
+```ocaml
+let _ = String.contains "house" 'u'   (* = true *)
+let _ = String.contains "house" 'z'   (* = false *)
+```
+
+Comparing `guess.[i]` against `target.[i]` checks one exact position;
+`String.contains target guess.[i]` checks the whole string instead,
+with no notion of position at all.

@@ -1,0 +1,47 @@
+---
+title: "Problem 3"
+---
+
+# Problem 3: Option types and nested matching
+
+For `winner`.
+
+## The `option` type
+
+OCaml has no `null`. "Maybe a value" gets its own type.
+
+```ocaml
+type 'a option =
+  | None
+  | Some of 'a
+```
+
+Think of it as a box. `None` is an empty box, `Some x` holds `x`.
+`line_winner` (Problem 2) already returns a `player option`:
+`Some p` when a line is won by `p`, `None` otherwise. `winner` has
+the same return type, answering for the whole board instead of one
+line.
+
+## Matching inside a match arm
+
+Sometimes the natural way to combine several sub-results is a
+`match` whose branches themselves contain another `match`. Walking a
+list of attempts and asking each one "did you succeed?" is a good
+example.
+
+```ocaml
+let rec first_success attempts =
+  match attempts with
+  | [] -> None
+  | attempt :: rest ->
+    (match run attempt with
+     | Some result -> Some result   (* this one worked - stop here *)
+     | None -> first_success rest)  (* try the next one *)
+```
+
+Read the outer match as the usual list recursion: base case `[]`,
+recursive case `attempt :: rest`. Inside the recursive case, a
+second match asks `run` about just this one attempt. If it
+succeeded, that's the overall answer. If not, recurse on the rest of
+the list. Parenthesizing the inner match keeps it scoped to that one
+arm.

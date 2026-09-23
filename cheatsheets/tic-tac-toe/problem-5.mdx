@@ -1,0 +1,42 @@
+---
+title: "Problem 5"
+---
+
+# Problem 5: Tail recursion and accumulators
+
+For `current_player`.
+
+## The accumulator pattern
+
+A recursive function often does its real work on the way back up the
+call stack. `n + sum_up_to (n - 1)` still has an addition left to do
+after the recursive call returns. The accumulator pattern moves that
+work before the recursive call instead, by adding an extra parameter
+that carries the running result down through the recursion.
+
+```ocaml
+let sum_up_to n =
+  let rec go acc n =
+    if n = 0 then acc
+    else go (acc + n) (n - 1)
+  in
+  go 0 n
+```
+
+`go` adds `n` into `acc` before recursing, instead of after. By the
+time `n` reaches `0`, `acc` already holds the full answer, and the
+base case just returns it. The outer function starts things off with
+a neutral starting value: `0` here, since that's what the base case
+would have returned anyway.
+
+## Three questions to ask
+
+1. **What is the running result?** Make it a new parameter, `acc`.
+2. **What is its starting value?** Whatever the original function
+   would return in its base case.
+3. **What happens to it at each step?** Whatever used to happen
+   after the recursive call. Do that to `acc` before recursing
+   instead.
+
+Answer those three questions for `current_player` and you have the
+shape of the solution.

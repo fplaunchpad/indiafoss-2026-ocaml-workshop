@@ -680,6 +680,14 @@ details.solution > *:last-child { margin-bottom: 0; }
 .quiz-code x-ocaml[data-quiz-test] { display: none !important; }
 .quiz-code.show-tests x-ocaml[data-quiz-test] { display: block !important; }
 
+/* Same override for the boot/runtime sentinel cells emit.ml injects on
+   every game page (see render_body / whenCellsReady): the plain [hidden]
+   attribute on an <x-ocaml> element does not suppress it, same reason as
+   the test-cell rule above. Unlike the toggleable test cells, these have
+   no legitimate visible state. */
+x-ocaml[data-boot-sentinel],
+x-ocaml[data-runtime-sentinel] { display: none !important; }
+
 /* ---- On-this-page TOC (right-hand, chapter mode only) ----
    Built client-side from the prose section headings (see buildToc in
    the runtime script). Complements the left workshop-outline sidebar:

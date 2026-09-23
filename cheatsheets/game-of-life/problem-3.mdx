@@ -1,0 +1,74 @@
+---
+title: "Problem 3"
+---
+
+# Problem 3: Matching a tuple, and or-patterns
+
+For `next_cell_state`.
+
+## Matching several values at once
+
+When a decision depends on a combination of values, match a tuple of
+them in one go instead of nesting separate matches.
+
+```ocaml
+let describe_response (method_, code) =
+  match method_, code with
+  | "GET", 200  -> "ok"
+  | "GET", 404  -> "not found"
+  | "POST", 201 -> "created"
+  | _           -> "other"
+```
+
+`match method_, code with` is shorthand for `match (method_, code)
+with`. Each clause checks both components at once. A clause only
+matches if the method and the code agree with that row.
+
+## Or-patterns: one arm, several literals
+
+Sometimes several different literal values should take the same
+branch. Writing one clause per value works, but repeats itself.
+
+```ocaml
+let is_weekend day =
+  match day with
+  | "Saturday" -> true
+  | "Sunday"   -> true
+  | _          -> false
+```
+
+An or-pattern collapses those into a single clause, with a `|`
+between the alternatives inside the pattern itself.
+
+```ocaml
+let is_weekend day =
+  match day with
+  | "Saturday" | "Sunday" -> true
+  | _                     -> false
+```
+
+`"Saturday" | "Sunday"` matches if the value is either one. The
+whole pattern succeeds the moment any alternative does, and all of
+them share the one right-hand side. This is lighter than a `when`
+guard for this situation, "is this value one of a few specific
+literals?" A guard needs an explicit comparison, `when day =
+"Saturday" || day = "Sunday"`. An or-pattern says the same thing
+without writing out the comparison.
+
+## Combining both
+
+The two combine directly. An or-pattern can sit inside one component
+of a tuple pattern, matching several values there while the other
+component still matches normally.
+
+```ocaml
+let shipping_cost (country, weight) =
+  match country, weight with
+  | "domestic", (1 | 2 | 3) -> 5
+  | "domestic", _           -> 8
+  | _, _                    -> 20
+```
+
+`(1 | 2 | 3)` inside the tuple pattern matches a `weight` of `1`,
+`2`, or `3`, the same as the standalone version above, just nested
+one level in.

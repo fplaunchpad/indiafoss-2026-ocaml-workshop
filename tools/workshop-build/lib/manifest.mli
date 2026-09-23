@@ -4,6 +4,7 @@ type entry = {
   order : int;
   part : int option;
   lab : bool;
+  game : bool;
   title : string;
   slug : string;
 }

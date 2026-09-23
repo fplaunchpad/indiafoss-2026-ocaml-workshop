@@ -311,16 +311,49 @@ let preprocess ?(line_offset = 0) src =
              part of the question) stays visible. *)
           in_code_block := true;
           if in_quiz_code () && fence_has_skip line then begin
-            Buffer.add_string buf (inject_quiz_test_marker line);
+            (* A hidden assertion cell must never touch the shared
+               checkpoint stack it is testing against -- run-on=peek,
+               same as a [:::solution] cell below, matching x-ocaml's
+               own hand-authored game pages. Without it this cell
+               defaults to [load] and auto-runs (and cascades into)
+               at connect time, same bug as the game-panel cell. *)
+            Buffer.add_string buf
+              (inject_marker (inject_quiz_test_marker line) "run-on=peek");
             Buffer.add_char buf '\n'
           end else if in_kind Game_panel then begin
-            Buffer.add_string buf (inject_marker line "game-panel=#game-panel");
+            (* run-on=click alongside game-panel=#game-panel: this cell
+               seeds every *_ref with a safe stub and calls [refresh ()]
+               once at the end of its own evaluation. Left at the
+               [load] default it auto-runs at connect time, and so does
+               every problem cell after it (same default) -- each one's
+               completion calls [Game_host.repaint_all] (see cell.ml),
+               which re-invokes refresh through whatever a problem's
+               [*_ref := ...] line just (re)bound. On a still-unsolved
+               problem that's the provided [failwith "not implemented"]
+               stub, so the panel throws before the reader has clicked
+               anything. run-on=click defers all of this to the
+               reader's first actual Run press, matching the hand-
+               authored game pages under x-ocaml's own repo root. *)
+            Buffer.add_string buf
+              (inject_marker line "game-panel=#game-panel run-on=click");
             Buffer.add_char buf '\n'
           end else if in_kind Solution then begin
             Buffer.add_string buf (inject_marker line "run-on=peek");
             Buffer.add_char buf '\n'
           end else begin
-            Buffer.add_string buf line;
+            (* Every other ocaml cell, on every page. Left unmarked a
+               cell defaults to [run-on=load], and x-ocaml runs a load
+               cell as soon as it connects, so merely opening a chapter
+               evaluated the entire document: output under every cell
+               before the reader had pressed anything, a long worker
+               backlog behind the first Check, and on a game page the
+               unsolved-stub cascade the game-panel comment above
+               describes. Pressing Run still evaluates the clicked cell
+               together with any earlier cell that has not run yet
+               (cell.ml's [run] walks back through non-peek
+               predecessors whatever their own run-on mode), which is
+               how a cell halfway down a page gets its context. *)
+            Buffer.add_string buf (inject_marker line "run-on=click");
             Buffer.add_char buf '\n'
           end
       | None when is_fence_line ->

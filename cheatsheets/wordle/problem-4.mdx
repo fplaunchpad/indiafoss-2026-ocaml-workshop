@@ -1,0 +1,61 @@
+---
+title: "Problem 4"
+---
+
+# Problem 4: `List.fold_left`
+
+For `keyboard_hint`.
+
+## Reducing a list to one value
+
+`List.fold_left f init l` walks `l` from left to right, threading an
+accumulator through: it starts at `init`, and each element updates it
+via `f acc element`. The final accumulator is the result.
+
+```ocaml
+let sum = List.fold_left (fun acc x -> acc + x) 0 [1; 2; 3; 4]
+(* sum = 10, computed as ((((0 + 1) + 2) + 3) + 4) *)
+```
+
+This is the general shape behind "compute one summary value out of a
+whole list": a running total, a running maximum, or -- here -- the
+best status seen so far for one letter across every guess.
+
+## The accumulator doesn't have to be a number
+
+`init` and the value `f` returns can be anything: a string, a tuple, an
+option. `keyboard_hint`'s accumulator is a `letter_status option`,
+updated only when a new sighting outranks the one already held.
+
+```ocaml
+let best_so_far =
+  List.fold_left
+    (fun best x -> if x > best then x else best)
+    min_int [3; 7; 2; 9; 4]
+(* = 9 *)
+```
+
+## Comparing "how good" two options are
+
+When a fold needs to compare two values by some strength, not by
+equality, giving each possibility a plain integer rank often makes
+the comparison trivial:
+
+```ocaml
+type quality = Bad | Ok | Great
+
+let rank = function Bad -> 0 | Ok -> 1 | Great -> 2
+
+let better a b = if rank a >= rank b then a else b
+```
+
+`keyboard_hint`'s four possibilities (never guessed, `Absent`,
+`Present`, `Correct`) are exactly this kind of ranked scale.
+
+## Nesting a walk inside a walk
+
+Nothing stops the function passed to `fold_left` from itself walking a
+second structure -- here, every guess is a `(string * letter_status
+array)` pair, and checking "does this guess mention `ch`, and if so
+with what status" means walking the guess's letters with
+`String.iteri` before returning back up to the outer fold.

@@ -41,6 +41,13 @@ if [ -d "$REPO_ROOT/games" ]; then
   cp -R "$REPO_ROOT/games" "$REPO_ROOT/_site/games"
 fi
 
+# Cheat sheets: plain reference pages condensed from ocaml_nptel, linked
+# from the game labs. Separate, simpler pipeline from workshop-build
+# above -- see tools/gen-cheatsheets.py.
+if [ -d "$REPO_ROOT/cheatsheets" ]; then
+  python3 "$REPO_ROOT/tools/gen-cheatsheets.py"
+fi
+
 cat > "$REPO_ROOT/_site/index.html" <<HTML
 <!doctype html>
 <html lang="en">
@@ -103,23 +110,25 @@ cat > "$REPO_ROOT/_site/index.html" <<HTML
       </span></a></li>
     </ol>
     <section>
-      <h2>Final 45-minute game lab</h2>
-      <p>Choose one game. Tic-Tac-Toe is the recommended starting point;
-        Game of Life is the challenge path. Complete the numbered problems
-        first; the stretch problems are optional. Joy is a third, open-ended
-        option: a creative-coding sandbox that the session does not cover,
-        for anyone who would rather draw than build a game.</p>
-      <p><strong>Open your chosen game during the briefing. Your answers are
-        saved locally in this browser as you type.</strong></p>
+      <h2>Game lab</h2>
       <ul class="parts games">
-        <li><a href="05-game-of-life.html"><span class="part-no">Challenge</span><span>
-          <span class="part-title">Conway's Game of Life</span>
-          <span class="part-summary">Build a simulation using lists</span>
-        </span></a></li>
         <li><a href="04-tic-tac-toe.html"><span class="part-no">Recommended</span><span>
           <span class="part-title">Tic-Tac-Toe</span>
           <span class="part-summary">Build a playable game step by step</span>
         </span></a></li>
+        <li><a href="05-game-of-life.html"><span class="part-no">Challenge</span><span>
+          <span class="part-title">Conway's Game of Life</span>
+          <span class="part-summary">Build a simulation using lists</span>
+        </span></a></li>
+        <li><a href="07-wordle.html"><span class="part-no">Challenge</span><span>
+          <span class="part-title">Wordle</span>
+          <span class="part-summary">Build a word-guessing game using strings and arrays</span>
+        </span></a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Also try</h2>
+      <ul class="parts games">
         <li><a href="06-joy.html"><span class="part-no">Sandbox</span><span>
           <span class="part-title">Joy: Creative Coding</span>
           <span class="part-summary">Draw with code; open-ended, nothing to complete</span>

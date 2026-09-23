@@ -1,0 +1,20 @@
+---
+title: "Problem 4"
+---
+
+# Problem 4: Combining booleans
+
+For `is_over`.
+
+## `||`, `&&`, and `<>`
+
+Once you already have the values you need, combining them into a
+single `bool` needs no pattern matching. OCaml's boolean operators
+do the job directly.
+
+```ocaml
+let a = true and b = false in
+a || b   (* true  - at least one is true *)
+a && b   (* false - both must be true *)
+a <> b   (* true  - true when they differ *)
+```

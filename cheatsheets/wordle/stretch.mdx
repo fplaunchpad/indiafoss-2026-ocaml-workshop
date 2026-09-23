@@ -1,0 +1,74 @@
+---
+title: "Stretch"
+---
+
+# Stretch: mutable arrays and two-pass loops
+
+For `score_guess`, the repeated-letter fix.
+
+## `Array.make` and mutation
+
+`Array.make n v` creates a new array of length `n` with every element
+set to `v`. Unlike a list, an array's elements can be overwritten in
+place with `arr.(i) <- new_value`.
+
+```ocaml
+let counters = Array.make 5 0
+let () = counters.(2) <- 9
+(* counters = [| 0; 0; 9; 0; 0 |] *)
+```
+
+This is the tool for "start with a blank slate of a known size, then
+fill it in as you go" -- exactly what a per-letter remaining-claims
+budget needs: 26 counters, one per letter of the alphabet, all
+starting from `count_letter target letter` and counting down as
+matches claim them.
+
+## `for` loops
+
+A `for` loop runs its body once for each integer in a range, purely
+for side effects (mutating an array, printing, and so on) -- there is
+no accumulator to thread through by hand, unlike `List.fold_left`.
+
+```ocaml
+let () =
+  for i = 0 to 4 do
+    Printf.printf "%d " i
+  done
+(* prints: 0 1 2 3 4 *)
+```
+
+`for` loops pair naturally with arrays: `for i = 0 to Array.length a -
+1 do ... done` visits every valid index in order, letting the body
+read and write `a.(i)` directly.
+
+## Why two separate passes?
+
+Sometimes a computation genuinely can't be done correctly in one pass
+over the data, because a later element's correct treatment depends on
+a decision made about an *earlier* element that hasn't happened yet if
+everything runs in one interleaved walk.
+
+Scoring a guess's repeated letters is exactly this: every `Correct`
+match must be decided and have its claim on the target's letters
+spent *before* any `Present` match is handed out, or a letter that's
+`Correct` in one position could get double-counted as `Present` for a
+duplicate elsewhere. Splitting into two `for` loops over the same
+range -- one pass that only looks for `Correct`, a second pass that
+only looks for `Present` -- makes that ordering explicit instead of
+trying to interleave both decisions in a single walk.
+
+```ocaml
+let scores_two_pass data =
+  let n = Array.length data in
+  let result = Array.make n 0 in
+  (* pass 1: something that must happen everywhere first *)
+  for i = 0 to n - 1 do
+    if data.(i) > 100 then result.(i) <- 1
+  done;
+  (* pass 2: everything else, now that pass 1 has fully finished *)
+  for i = 0 to n - 1 do
+    if result.(i) = 0 && data.(i) > 0 then result.(i) <- 2
+  done;
+  result
+```

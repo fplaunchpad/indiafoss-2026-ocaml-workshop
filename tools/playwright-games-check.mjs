@@ -192,8 +192,8 @@ try {
 
     const failures = [
       [cellCount > 1, `expected multiple OCaml cells, found ${cellCount}`],
-      [sidebarLinks.length === 6,
-        `workshop sidebar has ${sidebarLinks.length} links instead of 6`],
+      [sidebarLinks.length === 7,
+        `workshop sidebar has ${sidebarLinks.length} links instead of 7`],
       [sidebarClosed && sidebarReopened, 'sidebar toggle did not close and reopen'],
       [credit?.includes('Smayan Agarwal'), 'contributor credit is missing'],
       [home === 'index.html', `workshop-home link is ${home}`],
@@ -315,7 +315,7 @@ try {
       throw new Error(`Joy did not render an SVG:\n${JSON.stringify(diagnostics)}\n${errors.join('\n')}`,
         { cause: error });
     }
-    if (sidebarLinks.length !== 6 || !sidebarClosed || !sidebarReopened) {
+    if (sidebarLinks.length !== 7 || !sidebarClosed || !sidebarReopened) {
       throw new Error('Joy: workshop sidebar is incomplete or its toggle failed');
     }
     if (errors.length) throw new Error(`Joy:\n${errors.join('\n')}`);

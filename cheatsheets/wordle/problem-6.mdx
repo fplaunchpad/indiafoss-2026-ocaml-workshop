@@ -1,0 +1,51 @@
+---
+title: "Problem 6"
+---
+
+# Problem 6: `ref` and `String.iter`
+
+For `count_letter`.
+
+## A mutable counter
+
+`ref 0` creates a mutable cell holding the integer `0`. `!r` reads the
+current value; `r := v` writes a new one; `incr r` is shorthand for
+`r := !r + 1`.
+
+```ocaml
+let counter = ref 0
+let () = incr counter
+let () = incr counter
+let _ = !counter   (* = 2 *)
+```
+
+A `ref` is the escape hatch for the rare case where threading a value
+through as a function argument (the way `List.fold_left`'s accumulator
+does) would be more awkward than just mutating a cell in place.
+
+## Walking every character of a string
+
+`String.iter f s` calls `f` once for every character of `s`, left to
+right, purely for the side effect -- it returns `unit`, nothing is
+built up and handed back.
+
+```ocaml
+let () = String.iter print_char "hi"   (* prints "hi" *)
+```
+
+Combine the two: a `ref` counter, incremented once per character that
+matches, counts occurrences.
+
+```ocaml
+let count_vowels s =
+  let n = ref 0 in
+  String.iter (fun c -> if String.contains "aeiou" c then incr n) s;
+  !n
+```
+
+## Why not recursion here?
+
+Nothing is wrong with a recursive version over `String.to_seq s |>
+List.of_seq`, but `String.iter` already says "do something for each
+character" directly, and a single mutable counter is the simplest
+possible "something."

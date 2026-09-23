@@ -1,0 +1,62 @@
+---
+title: "Stretch 2"
+---
+
+# Stretch 2: Accumulating digits, and why consing un-reverses
+
+For `parse_rule`.
+
+## Peeling digits off with `mod` and `/`
+
+Integer division and remainder give you the individual digits of a
+number without looking at it as text. For a number `n`, `n mod 10`
+is its last (ones) digit, and `n / 10` is everything before that
+digit: the same number with the last digit dropped.
+
+```
+   47 mod 10 = 7        47 / 10 = 4
+    4 mod 10 = 4         4 / 10 = 0
+```
+
+Repeating that, take the last digit, then divide it away, visits
+every digit of `n` one at a time, from least significant to most
+significant. For `47` that's `7` first, then `4`. An
+accumulator-based loop that stops once the number reaches `0` drives
+this: at each step, peel off one digit with `mod`, shrink the number
+with `/`, and combine the digit into the accumulator. Same
+three-question recipe as any other accumulator: running result,
+starting value, per-step update.
+
+## Consing during a reverse-order walk un-reverses it
+
+Here's a smaller, unrelated puzzle that shows why "combine the digit
+into the accumulator" should specifically mean consing it onto the
+front. Consider reversing a list with an accumulator.
+
+```ocaml
+let reverse lst =
+  let rec go lst acc =
+    match lst with
+    | []      -> acc
+    | x :: xs -> go xs (x :: acc)
+  in
+  go lst []
+```
+
+`go` walks `lst` front to back, first element first, but conses each
+element onto the front of `acc` as it goes. The first element
+visited gets consed earliest, so it ends up buried deepest, at the
+back of the final list. Whatever gets visited last lands at the very
+front, since it's the last thing consed on. Walking front-to-back
+while consing onto the front turns a list around.
+
+## Applying that to digits
+
+Digit extraction discovers digits in the "wrong" order, least
+significant first (`47` gives up `7`, then `4`), the reverse of how
+the number is normally written (`4` then `7`). That's the same setup
+as `reverse` above: a walk that visits things in one order, consing
+each onto the front of an accumulator. The same un-reversal happens
+automatically. The accumulator ends up holding the digits in normal
+reading order, `4` before `7`, even though `7` was discovered first.
+No separate `List.rev` step needed.

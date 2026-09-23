@@ -1,0 +1,73 @@
+---
+title: "Problem 2"
+---
+
+# Problem 2: The accumulator pattern, over a fixed list
+
+For `count_live_neighbors`.
+
+## Work that happens on the way back up
+
+A recursive function often has work left to do after its recursive
+call returns. `n + sum_up_to (n - 1)` still needs an addition once
+`sum_up_to (n - 1)` comes back.
+
+```ocaml
+let rec sum_up_to n =
+  if n = 0 then 0
+  else n + sum_up_to (n - 1)
+```
+
+The accumulator pattern moves that work before the recursive call
+instead, by adding an extra parameter that carries the running
+result down through the recursion.
+
+```ocaml
+let sum_up_to n =
+  let rec go acc n =
+    if n = 0 then acc
+    else go (acc + n) (n - 1)
+  in
+  go 0 n
+```
+
+`go` adds `n` into `acc` before recursing, so by the time `n` reaches
+`0`, `acc` already holds the full answer, and the base case just
+returns it.
+
+## Three questions to ask
+
+1. **What is the running result?** Make it a new parameter, `acc`.
+2. **What is its starting value?** Whatever the original function
+   would return in its base case.
+3. **What happens to it at each step?** Whatever used to happen
+   after the recursive call. Do that to `acc` before recursing
+   instead.
+
+## Walking a fixed list instead of counting down a number
+
+`sum_up_to` counts a number down to `0`. The same pattern works
+recursing down a list instead: the base case becomes `[]` instead of
+`0`, and each step's "do that to `acc`" happens once per element
+instead of once per number.
+
+```ocaml
+let directions = [ (1, 0); (0, 1); (-1, 0); (0, -1) ]
+
+let rec count_hits x y directions acc =
+  match directions with
+  | [] -> acc
+  | (dx, dy) :: rest ->
+    let hit = if in_bounds (x + dx) (y + dy) then 1 else 0 in
+    count_hits x y rest (acc + hit)
+
+let _ = count_hits 0 0 directions 0
+```
+
+`count_hits` walks a fixed list of `(dx, dy)` offsets, a constant
+list written out once. It tests one offset per step with a helper
+(`in_bounds` here), adding `1` into `acc` for each one that counts
+and `0` otherwise. This is the shape `count_live_neighbors` needs: a
+fixed list of offsets to check one at a time, an accumulator
+counting how many pass, and helpers you're already given (`get` and
+`wrap`) to do the per-offset check.

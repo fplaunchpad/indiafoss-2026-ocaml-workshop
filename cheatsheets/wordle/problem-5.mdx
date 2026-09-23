@@ -1,0 +1,46 @@
+---
+title: "Problem 5"
+---
+
+# Problem 5: `Array.mem`
+
+For `is_valid_guess`.
+
+## Checking membership in an array
+
+`Array.mem x a` answers one question directly: is `x` anywhere in
+`a`? It checks every element with `=`, the same structural equality a
+literal pattern uses.
+
+```ocaml
+let () =
+  assert (Array.mem "house" [| "house"; "plant"; "chair" |]);
+  assert (not (Array.mem "horse" [| "house"; "plant"; "chair" |]))
+```
+
+`is_valid_guess` is exactly this question, no more: "is this guess
+one of the words in `words`?"
+
+## The list equivalent
+
+`List.mem` does the identical job for a list instead of an array
+(`'a -> 'a list -> bool`). Which one to reach for depends only on
+which data structure you already have, never on the question being
+asked.
+
+## It's not magic
+
+`Array.mem` is an ordinary loop under a name, checking each element in
+turn and stopping the moment it finds a match:
+
+```ocaml
+let mem_manual x a =
+  let found = ref false in
+  Array.iter (fun y -> if y = x then found := true) a;
+  !found
+```
+
+A real implementation stops scanning as soon as it finds a match
+rather than checking every remaining element regardless -- `mem_manual`
+above doesn't, but the *behavior* (true/false answer) is the same
+either way, which is the only thing a caller ever depends on.

@@ -1,0 +1,74 @@
+---
+title: "Stretch"
+---
+
+# Stretch: Tail recursion and accumulators
+
+For `best_move`.
+
+This builds on the accumulator pattern from the [Problem 5 cheat
+sheet](problem-5.html). `best_move` applies it twice: once to find
+the best score among a move's children, and again to find the best
+move itself. It also needs two more pieces: skipping a move that
+turns out not to be legal, and using `max` instead of writing your
+own comparison.
+
+## The accumulator pattern
+
+A recursive function often does its real work on the way back up the
+call stack. `n + sum_up_to (n - 1)` still has an addition left to do
+after the recursive call returns. The accumulator pattern moves that
+work before the recursive call instead, by adding an extra parameter
+that carries the running result down through the recursion.
+
+```ocaml
+let sum_up_to n =
+  let rec go acc n =
+    if n = 0 then acc
+    else go (acc + n) (n - 1)
+  in
+  go 0 n
+```
+
+`go` adds `n` into `acc` before recursing, instead of after. By the
+time `n` reaches `0`, `acc` already holds the full answer, and the
+base case just returns it.
+
+## Three questions to ask
+
+1. **What is the running result?** Make it a new parameter, `acc`.
+2. **What is its starting value?** Whatever the original function
+   would return in its base case.
+3. **What happens to it at each step?** Whatever used to happen
+   after the recursive call. Do that to `acc` before recursing
+   instead.
+
+## Skipping a step that doesn't apply
+
+`apply_move` (already provided) has type `board -> int -> board
+option`. `Some new_board` means a legal move, `None` means the
+square is already taken. Walking every position while some of them
+are illegal means checking that `option` at each step and recursing
+past the ones that don't apply, without touching `acc`.
+
+```ocaml
+let rec best_of positions acc =
+  match positions with
+  | [] -> acc
+  | pos :: rest ->
+    (match try_at pos with
+     | None -> best_of rest acc              (* not usable, skip it *)
+     | Some value -> best_of rest (combine acc value))
+```
+
+Same accumulator shape as above, with one extra pattern: a step that
+produces nothing just passes `acc` through unchanged.
+
+## `max` and `min`
+
+OCaml's standard library has `max a b` and `min a b` built in. They
+return whichever of the two is larger, or smaller. `if value > acc
+then value else acc` and `max acc value` say the same thing. Use
+whichever reads more clearly. `min_int` is the smallest
+representable `int`, handy as a starting accumulator for a running
+maximum, since anything at all beats it on the first step.
