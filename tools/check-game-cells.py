@@ -120,13 +120,21 @@ def parse_cells(path: Path) -> list[Cell]:
     return parser.cells
 
 
-def solution_map(path: Path, cells: list[Cell]) -> dict[str, Cell]:
-    quizzes: dict[str, dict[str, Cell]] = {}
+def solution_map(path: Path, cells: list[Cell]) -> dict[str, list[Cell]]:
+    """Map each quiz id to its solution cells, in document order.
+
+    A quiz's solutions are every :::solution cell between its own student/test
+    cells and the next quiz's. Most problems have exactly one; a problem may
+    show several equivalent solutions back to back (for example a plain
+    recursive version followed by a `List.fold_left` version), and every one
+    of them is checked against that problem's hidden tests.
+    """
+    quizzes: dict[str, dict[str, Cell | list[Cell]]] = {}
     pending_quiz: str | None = None
 
     for cell in cells:
         if cell.quiz_id:
-            entry = quizzes.setdefault(cell.quiz_id, {})
+            entry = quizzes.setdefault(cell.quiz_id, {"solutions": []})
             key = "test" if cell.is_test else "student"
             if key in entry:
                 raise ValueError(f"{path}: duplicate {key} cell for {cell.quiz_id}")
@@ -135,18 +143,16 @@ def solution_map(path: Path, cells: list[Cell]) -> dict[str, Cell]:
         elif cell.is_solution:
             if pending_quiz is None:
                 raise ValueError(f"{path}: solution cell {cell.number} has no preceding quiz")
-            entry = quizzes[pending_quiz]
-            if "solution" in entry:
-                raise ValueError(f"{path}: duplicate solution for {pending_quiz}")
-            entry["solution"] = cell
-            pending_quiz = None
+            quizzes[pending_quiz]["solutions"].append(cell)  # type: ignore[union-attr]
 
     for quiz_id, entry in quizzes.items():
-        missing = {"student", "test", "solution"} - entry.keys()
+        missing = {"student", "test"} - entry.keys()
         if missing:
             raise ValueError(f"{path}: {quiz_id} is missing {', '.join(sorted(missing))}")
+        if not entry["solutions"]:
+            raise ValueError(f"{path}: {quiz_id} is missing solution")
 
-    return {quiz_id: entry["solution"] for quiz_id, entry in quizzes.items()}
+    return {quiz_id: entry["solutions"] for quiz_id, entry in quizzes.items()}  # type: ignore[misc]
 
 
 def source_block(path: Path, cell: Cell, source: str | None = None) -> str:
@@ -160,13 +166,19 @@ def student_program(path: Path, cells: list[Cell]) -> str:
     return "".join(parts)
 
 
-def reference_program(path: Path, cells: list[Cell], solutions: dict[str, Cell]) -> str:
+def reference_program(
+    path: Path, cells: list[Cell], solutions: dict[str, list[Cell]], variant: int
+) -> str:
+    """Build one reference program, picking the `variant`-th solution for each
+    quiz (clamped to that quiz's own list, so a quiz with only one solution
+    always uses it regardless of how many variants a sibling quiz has)."""
     parts = [GAME_LIB_STUB]
     for cell in cells:
         if cell.is_solution:
             continue
         if cell.quiz_id and not cell.is_test:
-            solution = solutions[cell.quiz_id]
+            quiz_solutions = solutions[cell.quiz_id]
+            solution = quiz_solutions[min(variant, len(quiz_solutions) - 1)]
             # Solution cells run in x-ocaml's side-effect-free peek mode, so
             # they deliberately omit the student's final forward-reference
             # assignments (for example [winner_ref := winner]). When building
@@ -220,31 +232,41 @@ def find_ocamlc() -> str:
 def check_page(path: Path, ocamlc: str) -> tuple[int, int]:
     cells = parse_cells(path)
     solutions = solution_map(path, cells)
+    solution_count = sum(len(variants) for variants in solutions.values())
+    passes = max((len(variants) for variants in solutions.values()), default=1)
 
     with tempfile.TemporaryDirectory(prefix="game-cell-check-") as temp_name:
         temp = Path(temp_name)
         student = temp / "student_cells.ml"
-        reference = temp / "reference_cells.ml"
         student.write_text(student_program(path, cells), encoding="utf-8")
-        reference.write_text(reference_program(path, cells, solutions), encoding="utf-8")
-
         run(
             [ocamlc, "-c", student.name],
             cwd=temp,
             description=f"{path}: authored-cell compilation",
         )
-        run(
-            [ocamlc, "-o", "reference-check", reference.name],
-            cwd=temp,
-            description=f"{path}: reference-solution compilation",
-        )
-        run(
-            [str(temp / "reference-check")],
-            cwd=temp,
-            description=f"{path}: reference-solution tests",
-        )
 
-    return len(cells), len(solutions)
+        # Every quiz may offer several equivalent solutions (e.g. a plain
+        # recursive version and a List.fold_left version); run one pass per
+        # variant index so every solution cell gets compiled and tested at
+        # least once, not just whichever variant happens to be first.
+        for variant in range(passes):
+            reference = temp / f"reference_cells_{variant}.ml"
+            reference.write_text(
+                reference_program(path, cells, solutions, variant), encoding="utf-8"
+            )
+            binary = f"reference-check-{variant}"
+            run(
+                [ocamlc, "-o", binary, reference.name],
+                cwd=temp,
+                description=f"{path}: reference-solution compilation (variant {variant})",
+            )
+            run(
+                [str(temp / binary)],
+                cwd=temp,
+                description=f"{path}: reference-solution tests (variant {variant})",
+            )
+
+    return len(cells), solution_count
 
 
 def main() -> int:
@@ -267,10 +289,10 @@ def main() -> int:
 
     for page in pages:
         try:
-            cell_count, quiz_count = check_page(page, ocamlc)
+            cell_count, solution_count = check_page(page, ocamlc)
         except (OSError, ValueError, RuntimeError) as error:
             parser.exit(1, f"game-cell-check: {error}\n")
-        print(f"{page}: {cell_count} cells compiled; {quiz_count} reference quizzes passed")
+        print(f"{page}: {cell_count} cells compiled; {solution_count} reference solutions passed")
     return 0
 
 

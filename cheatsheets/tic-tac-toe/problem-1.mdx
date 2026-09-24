@@ -1,0 +1,72 @@
+---
+title: "Problem 1"
+---
+
+# Problem 1: Pattern matching basics
+
+For `no_empty_cells_left`.
+
+## `match` in one line
+
+`match v with | pattern -> expr | pattern -> expr | ...` picks the
+first pattern that matches `v` and evaluates the expression next to
+it. Patterns are tried top to bottom. The first one that fits wins.
+
+```ocaml
+let classify n =
+  match n with
+  | 0 -> "zero"
+  | 1 -> "one"
+  | _ -> "many"
+```
+
+The three simplest patterns:
+
+- **Literal**: `0`, `"hello"`, `true`. Matches that exact value.
+- **Variable**: `n`, `x`. Matches anything, and binds it to that name.
+- **Wildcard**: `_`. Matches anything, binds nothing. Use it when
+  you don't need the value.
+
+## Recursing over a list
+
+A list is built from two constructors: `[]` for empty, `h :: t` for
+a head `h` and tail `t`. A function over a list almost always has
+one `match` clause per constructor, with the recursive call made on
+the strictly smaller tail.
+
+```ocaml
+let rec length l =
+  match l with
+  | []     -> 0            (* base case *)
+  | _ :: t -> 1 + length t (* recursive case *)
+
+let _ = length [10; 20; 30]  (* = 3 *)
+```
+
+## Local functions
+
+The right-hand side of a `let ... in` binding can be any expression.
+A function is just another kind of value, no different from an
+`int` or a `string`. `let name args = expr in body` names a
+function the same way `let x = 5 in body` names a number. `name`
+exists only inside `body`.
+
+```ocaml
+let describe n =
+  let is_even m = m mod 2 = 0 in
+  if is_even n then "even" else "odd"
+```
+
+This is the same nesting as `let x = 5 in let y = 10 in x + y`. One
+binding's body is itself another `let`. Here the inner binding's
+value happens to be the function `is_even`. `is_even` can take
+several arguments, and can be `let rec` if it calls itself. It's
+still just a name, scoped inside `describe`.
+
+## Why a helper function?
+
+Sometimes the function you're implementing takes extra arguments, or
+a different shape, than the thing you actually want to recurse over.
+A small `let rec helper ... = match ... with ...` defined inside the
+main function lets you recurse on just the list, while the outer
+function keeps whatever signature it needs.

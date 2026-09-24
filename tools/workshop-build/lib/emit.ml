@@ -265,12 +265,11 @@ let runtime_script ~asset_root =
     }
 
     function allCells() {
-      // The hidden runtime sentinel is an implementation detail, not an
-      // editable workshop cell. Keep it out of persistence, toolbar actions,
-      // reset buttons, and quiz bookkeeping. Cells marked [data-skip] are
-      // error demonstrations that must not participate in auto-evaluation.
+      // The hidden runtime/boot sentinels are implementation details, not
+      // editable workshop cells. Keep them out of persistence, toolbar
+      // actions, reset buttons, and quiz bookkeeping.
       return Array.from(document.querySelectorAll(
-        'x-ocaml:not([data-runtime-sentinel]):not([data-skip])'));
+        'x-ocaml:not([data-runtime-sentinel]):not([data-boot-sentinel])'));
     }
 
     // Hide slide area until x-ocaml has finished reflowing each
@@ -568,6 +567,11 @@ let runtime_script ~asset_root =
       cell.textContent = src;
       localStorage.removeItem(storageKey(cell));
       dirtyButton(cell)?.classList.remove('dirty');
+      // A reset rewrites the editor without an [input] event, so a code
+      // quiz whose "passed" badge is pinned to the old source has to
+      // recheck it. x-ocaml syncs the editor from the textContent change
+      // through its MutationObserver, so recheck on a later turn.
+      setTimeout(syncQuizPassClaims, 400);
     }
     function resetAll() {
       for (const c of allCells()) resetCell(c);
@@ -614,6 +618,39 @@ let runtime_script ~asset_root =
         .map(e => e.textContent || '').join('\n');
       return out.includes('__indiafoss_runtime_ready__');
     }
+    // The boot sentinel is the FIRST x-ocaml cell in the document (see
+    // render_body in emit.ml) and has no run-on attribute, so x-ocaml
+    // auto-runs it the moment it connects -- no click needed here, and
+    // since it has no predecessor that auto-run cascades into nothing
+    // else. Used instead of the end-of-document [runtimeSentinel] when
+    // there is nothing to restore: that one's forced click cascades
+    // backward through every cell, silently running every unsolved
+    // problem stub and reassigning its `*_ref` to a still-failing
+    // implementation (see the comment on waitForRuntimeQuiescence
+    // below) -- exactly the "board throws on the very first click"
+    // behavior this is here to avoid for a first-time visitor.
+    function bootSentinel() {
+      return document.querySelector('x-ocaml[data-boot-sentinel]');
+    }
+    function bootSentinelHasCompleted() {
+      const sentinel = bootSentinel();
+      const out = Array.from(sentinel?.shadowRoot?.querySelectorAll(
+        '.caml_meta, .caml_stdout, .caml_stderr, .caml_html') || [])
+        .map(e => e.textContent || '').join('\n');
+      return out.includes('__indiafoss_boot_ready__');
+    }
+    async function waitForBootSentinel() {
+      if (!body.classList.contains('game-chapter')) return;
+      const sentinel = bootSentinel();
+      if (!sentinel) throw new Error('game page is missing its boot sentinel');
+      const deadline = performance.now() + 90000;
+      while (!bootSentinelHasCompleted() && performance.now() < deadline) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (!bootSentinelHasCompleted()) {
+        throw new Error('game runtime did not become ready within 90 seconds');
+      }
+    }
     async function waitForRuntimeQuiescence() {
       if (!body.classList.contains('game-chapter')) return;
       const sentinel = runtimeSentinel();
@@ -650,6 +687,94 @@ let runtime_script ~asset_root =
           ?.querySelectorAll('.caml_meta, .caml_stdout, .caml_stderr, .caml_html')
           .forEach(e => { e.textContent = ''; });
       }
+      document.getElementById('game-panel')
+        ?.querySelectorAll('.xo-game-error')
+        .forEach(e => e.remove());
+    }
+
+    // waitForRuntimeQuiescence's forced run-the-whole-chain click is a real,
+    // checkpoint-integrated run of every predecessor cell (see x-ocaml's
+    // cell.ml: a cell's Run cascades backward to any not-yet-Run_ok
+    // predecessor, regardless of that predecessor's own run-on mode). On a
+    // game page that includes every not-yet-attempted problem cell, each of
+    // which still holds its `failwith "not implemented"` template and ends
+    // with `<name>_ref := <name>` -- so the cascade both re-establishes any
+    // previously *solved* answers (the point of restoring across a reload)
+    // and, as a side effect, genuinely executes every unsolved stub, each
+    // one throwing and each one clobbering the provided demo's placeholder
+    // ref with its own broken implementation. clearRenderedOutputs() erases
+    // the resulting "not implemented" spam only once quiescence resolves;
+    // observed live, that arrives late enough on a slow device/connection
+    // (see "Close game runtime startup races") for the exception stack to
+    // render and linger. A MutationObserver per cell erases that output the
+    // instant it appears -- during the mutation's own microtask, before the
+    // next paint -- instead of racing a fixed cleanup afterward.
+    //
+    // A game-panel cell's runtime exceptions land somewhere else entirely:
+    // x-ocaml's cell.ml (append_panel_error) appends a `.xo-game-error` box
+    // straight onto the shared #game-panel div in the main document, by
+    // design accumulating until the next successful board render replaces
+    // the panel's innerHTML wholesale. During the forced startup cascade
+    // nothing after the last erroring stub necessarily re-renders the
+    // board, so those boxes are never naturally cleared -- they are the
+    // stack of "not implemented" errors visible under the board itself.
+    // #game-panel lives outside every cell's shadow root, so it needs its
+    // own observer.
+    //
+    // That observer also has to outlive the per-cell ones. A game-panel
+    // cell is [run_on=load] by default, so besides the forced sentinel
+    // cascade x-ocaml auto-runs it a second time on its own, from
+    // x_ocaml.ml's connectedCallback-time [Cell.auto_run_at_connect]
+    // (independent of whenCellsReady's own wait). Under heavy throttling
+    // these two runs land far enough apart that the second one -- still
+    // just the unsolved stub throwing -- can arrive after quiescence is
+    // declared and the per-cell observers are already gone. Give the
+    // panel its own stop function, called only once it has gone quiet for
+    // a bit, so a late straggler run still gets wiped.
+    let startupOutputObservers = [];
+    let panelObserver = null;
+    function suppressStartupOutput() {
+      const blank = cell => {
+        cell.shadowRoot
+          ?.querySelectorAll('.caml_meta, .caml_stdout, .caml_stderr, .caml_html')
+          .forEach(e => { if (e.textContent) e.textContent = ''; });
+      };
+      for (const cell of allCells()) {
+        blank(cell);
+        const sr = cell.shadowRoot;
+        if (!sr) continue;
+        const obs = new MutationObserver(() => blank(cell));
+        obs.observe(sr, { childList: true, subtree: true, characterData: true });
+        startupOutputObservers.push(obs);
+      }
+      const panel = document.getElementById('game-panel');
+      if (panel) {
+        const wipe = () => panel.querySelectorAll('.xo-game-error').forEach(e => e.remove());
+        wipe();
+        panelObserver = new MutationObserver(wipe);
+        panelObserver.observe(panel, { childList: true, subtree: true });
+      }
+    }
+    function stopSuppressingStartupOutput() {
+      for (const obs of startupOutputObservers) obs.disconnect();
+      startupOutputObservers = [];
+    }
+    // Keep wiping #game-panel until it has been error-free for a full
+    // quiet window, capped so a page with a genuinely broken panel
+    // doesn't hang forever.
+    async function stopSuppressingPanelErrors() {
+      const panel = document.getElementById('game-panel');
+      if (!panelObserver || !panel) return;
+      const quietMs = 500;
+      const capMs = 4000;
+      const deadline = Date.now() + capMs;
+      while (Date.now() < deadline) {
+        panel.querySelectorAll('.xo-game-error').forEach(e => e.remove());
+        await new Promise(r => setTimeout(r, quietMs));
+        if (panel.querySelectorAll('.xo-game-error').length === 0) break;
+      }
+      panelObserver.disconnect();
+      panelObserver = null;
     }
 
     // Reserve a right-hand strip inside each cell's editor so code
@@ -675,8 +800,19 @@ let runtime_script ~asset_root =
         if (ready) break;
         await new Promise(r => setTimeout(r, 100));
       }
+      suppressStartupOutput();
       const restoredCount = restorePersistedCells();
-      await waitForRuntimeQuiescence();
+      // Nothing saved to restore -- the common case, and every first-time
+      // visit -- needs only proof the worker is alive, not a forced run of
+      // the whole cell chain (see waitForBootSentinel's comment for why
+      // that forced run is unsafe on an untouched game page). Only a
+      // restore actually needs waitForRuntimeQuiescence's full cascade, to
+      // re-execute the learner's previously solved cells.
+      if (restoredCount > 0) {
+        await waitForRuntimeQuiescence();
+      } else {
+        await waitForBootSentinel();
+      }
       if (restoredCount > 0) {
         let stable = false;
         // The stale pristine format response was observed roughly 700ms after
@@ -700,7 +836,15 @@ let runtime_script ~asset_root =
         watchCellForEdits(c);
       }
       // Hide automatic startup output without invalidating cell state.
+      // The observers already erased it as it appeared; this is a final,
+      // redundant sweep for anything that landed in the gap before the
+      // first observer was attached.
+      stopSuppressingStartupOutput();
       clearRenderedOutputs();
+      // Runs in the background: a straggler run_on=load game-panel run can
+      // still land after this point (see stopSuppressingPanelErrors above),
+      // and nothing else here depends on the panel being settled first.
+      stopSuppressingPanelErrors();
       body.classList.add('runtime-ready');
       // Code quizzes can now find the test cell's shadow Run button.
       setupCodeQuizzes();
@@ -773,6 +917,16 @@ let runtime_script ~asset_root =
     // here turns the rendered body into an interactive widget. State
     // persists in localStorage under [indiafoss-ocaml-quiz:<path>#<id>].
     const QUIZ_PREFIX = 'indiafoss-ocaml-quiz:' + location.pathname + '#';
+
+    // Each code quiz registers a hook that rechecks its "passed" badge
+    // against the source now in the student cell. Called from resetCell,
+    // where the editor changes with no [input] event to observe.
+    const quizPassSyncs = [];
+    function syncQuizPassClaims() {
+      for (const sync of quizPassSyncs) {
+        try { sync(); } catch (_) {}
+      }
+    }
 
     // Undo a quiz's answered/passed state: MCQ selection, code-quiz
     // status line, the "answered" / "correct" styling, and the
@@ -930,6 +1084,52 @@ let runtime_script ~asset_root =
       const wrap = studentCell.closest('.cell-wrap') || studentCell;
       wrap.parentNode.insertBefore(controls, wrap.nextSibling);
 
+      // ---------- Tie a stored pass to the code that passed ----------
+      // The stored entry carries a hash of the student cell's source as
+      // submitted to the passing Check, so the badge can be checked
+      // against what the editor holds now. Before this, a pass was a bare
+      // boolean under the quiz id, so "Passed previously" reappeared on
+      // every reload no matter how the code had changed since.
+      // Whitespace is squeezed out before hashing: running a cell sends it
+      // through ocamlformat, so the exact spelling of a passing cell is not
+      // stable, while any real edit still changes the hash. This mirrors the
+      // whitespace tolerance in reapplyDivergedPersistedCells.
+      function studentHash() {
+        const txt = cellEditorText(studentCell);
+        if (txt == null) return null;
+        return srcHash(txt.replace(/\s+/g, ' ').trim());
+      }
+      function storedPassHash() {
+        try {
+          const saved = localStorage.getItem(QUIZ_PREFIX + id);
+          if (!saved) return null;
+          const entry = JSON.parse(saved);
+          return entry && entry.passed ? (entry.srcHash || null) : null;
+        } catch (_) { return null; }
+      }
+      // Assert or withdraw the stored pass, depending on whether the editor
+      // still holds the source that earned it. Only ever touches a pass
+      // badge: a failure message belongs to the run that produced it and is
+      // cleared by the next Check. Entries written before this change carry
+      // no hash, so they stop claiming anything until the reader re-checks.
+      function syncPassClaim() {
+        const stored = storedPassHash();
+        const current = studentHash();
+        const claiming = quiz.classList.contains('quiz-correct');
+        if (stored && current && stored === current) {
+          if (!claiming) {
+            status.textContent = '✓ Passed previously';
+            status.className = 'quiz-status pass';
+            quiz.classList.add('answered', 'quiz-correct');
+          }
+        } else if (claiming) {
+          status.textContent = '';
+          status.className = 'quiz-status';
+          quiz.classList.remove('answered', 'quiz-correct');
+        }
+      }
+      quizPassSyncs.push(syncPassClaim);
+
       function clickRun(cell) {
         const btn = cell.shadowRoot?.querySelector('.run_btn button');
         if (btn) btn.click();
@@ -997,19 +1197,44 @@ let runtime_script ~asset_root =
           .forEach(e => { e.textContent = ''; });
         clickRun(testCell);
         let tries = 0;
+        // 90s budget, matching waitForBootSentinel/waitForRuntimeQuiescence
+        // above: the worker is single-threaded and FIFO, so Check can be
+        // sitting behind the page's own automatic load-chain backlog (worse
+        // on a big page like Game of Life, and worst right after
+        // runtime-ready, which only proves the worker is alive on a fresh
+        // load, not that the backlog has drained -- see whenCellsReady's
+        // boot-sentinel comment). The old 16s cap (80 tries * 200ms)
+        // reported a false "Timed out" on an answer that was already
+        // correct and landed ~23s in. Confirmed this is not an engine
+        // issue: identical failure reproduced with a freshly verified,
+        // byte-for-byte-matching x-ocaml.worker.js build.
         const tick = setInterval(() => {
           tries++;
           const s = readState();
-          if (s !== 'pending' || tries > 80) {
+          if (s !== 'pending' || tries > 450) {
             clearInterval(tick);
             if (s === 'pass') {
               status.textContent = '✓ All tests pass';
               status.className = 'quiz-status pass';
-              quiz.classList.add('answered', 'quiz-correct');
-              try {
-                localStorage.setItem(QUIZ_PREFIX + id,
-                  JSON.stringify({ kind: 'code', passed: true }));
-              } catch (_) {}
+              // Wait for x-ocaml's own post-run reformat to settle before
+              // hashing and claiming a pass, same 400ms margin resetCell
+              // uses for the same MutationObserver-driven sync elsewhere
+              // in this file. Hashing now, at click-adjacent time, would
+              // capture the reader's pre-format spelling; the editor is
+              // about to be rewritten to its canonical formatting, and
+              // that rewrite is what syncPassClaim (and a future reload)
+              // will compare against. Adding the 'quiz-correct' class only
+              // once the hash is stored keeps a stray input/keyup recheck
+              // during this window from reading "claiming a pass, nothing
+              // stored yet" and revoking a badge that was never wrong.
+              setTimeout(() => {
+                const settled = studentHash();
+                quiz.classList.add('answered', 'quiz-correct');
+                try {
+                  localStorage.setItem(QUIZ_PREFIX + id,
+                    JSON.stringify({ kind: 'code', passed: true, srcHash: settled }));
+                } catch (_) {}
+              }, 400);
               {
                 const line = parseInt(quiz.dataset.quizLine || '', 10);
                 reportQuiz({
@@ -1046,18 +1271,30 @@ let runtime_script ~asset_root =
           }
         }, 200);
       });
-      // Restore prior result.
-      try {
-        const saved = localStorage.getItem(QUIZ_PREFIX + id);
-        if (saved) {
-          const { passed } = JSON.parse(saved);
-          if (passed) {
-            status.textContent = '✓ Passed previously';
-            status.className = 'quiz-status pass';
-            quiz.classList.add('answered', 'quiz-correct');
-          }
-        }
-      } catch (_) {}
+      // Withdraw the badge as soon as the reader edits the cell, so it never
+      // outlives the code it describes. Debounced, like the source
+      // persistence next to which it runs, and it reads the editor the same
+      // way. Nothing is re-run: the reader presses Check when ready. Bringing
+      // the passing source back brings the badge back, because the comparison
+      // is against content, not against a history of attempts.
+      // [keyup] as well as [input]: CodeMirror serves Mod-Z from its own
+      // keymap and cancels the keydown, so an undo reaches the document
+      // without any [input] event to observe.
+      const ed = studentCell.shadowRoot?.querySelector('.cm-content');
+      if (ed) {
+        let timer = null;
+        const recheck = () => {
+          clearTimeout(timer);
+          timer = setTimeout(syncPassClaim, 250);
+        };
+        ed.addEventListener('input', recheck);
+        ed.addEventListener('keyup', recheck);
+      }
+      // Restore a prior pass, if the editor still holds the source it came
+      // from. setupCodeQuizzes runs from whenCellsReady, after saved sources
+      // are restored and the runtime has settled, so the editor read here is
+      // the one the reader is about to look at.
+      syncPassClaim();
     }
 
     // ---------- Heading permalinks ----------
@@ -1362,27 +1599,49 @@ let render_sidebar ~(manifest : Manifest.t option) =
       Buffer.add_string buf
         "    <div class=\"sidebar-title\">Workshop outline</div>\n";
       Buffer.add_string buf "    <ul class=\"sidebar-parts\">\n";
-      let in_lab = ref false in
-      List.iter
-        (fun (entry : Manifest.entry) ->
-          (match entry.lab with
-           | true when not !in_lab ->
-               in_lab := true;
-               Buffer.add_string buf
-                 "    </ul>\n    <div class=\"sidebar-title sidebar-group\">Game lab</div>\n    <ul class=\"sidebar-parts sidebar-labs\">\n"
-           | _ -> ());
-          let current =
-            if entry.slug = m.current_slug then " class=\"current\"" else ""
-          in
-          Buffer.add_string buf
-            (Printf.sprintf
-               "      <li%s><a href=\"%s.html\">%s%s</a></li>\n"
-               current entry.slug
-               (match entry.part with
-                | Some n -> Printf.sprintf "<span class=\"part-no\">%d</span> " n
-                | None -> "")
-               (Parse.html_escape entry.title)))
-        m.parts;
+      let render_entry (entry : Manifest.entry) =
+        let current =
+          if entry.slug = m.current_slug then " class=\"current\"" else ""
+        in
+        Buffer.add_string buf
+          (Printf.sprintf "      <li%s><a href=\"%s.html\">%s%s</a></li>\n"
+             current entry.slug
+             (match entry.part with
+              | Some n -> Printf.sprintf "<span class=\"part-no\">%d</span> " n
+              | None -> "")
+             (Parse.html_escape entry.title))
+      in
+      let core, labs = List.partition (fun (e : Manifest.entry) -> not e.lab) m.parts in
+      let games, other_labs = List.partition (fun (e : Manifest.entry) -> e.game) labs in
+      (* Matches the curated order on the landing page (see
+         tools/build-site.sh's Game lab list), not the filename order
+         (fm.game entries are numbered 04, 05, 07): Tic-Tac-Toe first as
+         the recommended starting point, then Wordle, then Game of Life
+         as the stretch challenge. Anything not in this list keeps its
+         filename order and sorts after the entries that are. *)
+      let game_priority = [ "04-tic-tac-toe"; "05-game-of-life"; "07-wordle" ] in
+      let priority_rank slug =
+        match List.find_index (fun s -> s = slug) game_priority with
+        | Some i -> i
+        | None -> List.length game_priority
+      in
+      let games =
+        List.stable_sort
+          (fun (a : Manifest.entry) (b : Manifest.entry) ->
+            compare (priority_rank a.slug) (priority_rank b.slug))
+          games
+      in
+      List.iter render_entry core;
+      if games <> [] then begin
+        Buffer.add_string buf
+          "    </ul>\n    <div class=\"sidebar-title sidebar-group\">Game lab</div>\n    <ul class=\"sidebar-parts sidebar-labs\">\n";
+        List.iter render_entry games
+      end;
+      if other_labs <> [] then begin
+        Buffer.add_string buf
+          "    </ul>\n    <div class=\"sidebar-title sidebar-group\">Also try</div>\n    <ul class=\"sidebar-parts sidebar-labs\">\n";
+        List.iter render_entry other_labs
+      end;
       Buffer.add_string buf "    </ul>\n";
       Buffer.add_string buf "  </nav>\n";
       Buffer.add_string buf "</aside>\n";
@@ -1447,6 +1706,30 @@ let render_body ~html_body ~(fm : Frontmatter.t) ~manifest =
      reparents the section[data-slide] elements into it on activation. *)
   if fm.game then Buffer.add_string buf "<main class=\"game-chapter-layout\">\n";
   Buffer.add_string buf "<article class=\"chapter\">\n";
+  if fm.game then
+    (* First x-ocaml cell in the WHOLE document, with no run-on
+       attribute (defaults to load) -- x-ocaml auto-runs a load cell at
+       connect time, and since nothing precedes this one the cascade
+       that triggers (see cell.ml's [run]) never reaches anything else.
+       Its sole purpose is a worker-alive probe cheap enough to use on
+       every visit, including the common case where restorePersistedCells
+       finds nothing to restore: unlike the end-of-document
+       [data-runtime-sentinel] (whose forced click cascades backward
+       through EVERY cell to re-run restored answers), this one proves
+       the worker responds without running a single authored cell, so a
+       first-time visitor's untouched problem stubs stay genuinely
+       Not_run -- see [waitForBootSentinel]. *)
+    Buffer.add_string buf
+      "<x-ocaml data-boot-sentinel=\"true\" hidden>let () = print_endline \"__indiafoss_boot_ready__\"</x-ocaml>\n";
+  (* Small label opening the content column, in the same wording and
+     casing as the landing page's [<h2>Game lab</h2>] section and the
+     outline's [.sidebar-group] heading. It also fills the band of blank
+     space the grid layout used to leave here: see the margin-collapse
+     note on [.game-lab-eyebrow] in assets/css/game-chapter.css. Emitted
+     after the boot sentinel so that cell stays the article's first
+     child and the document's first x-ocaml element. *)
+  if fm.game then
+    Buffer.add_string buf "<p class=\"game-lab-eyebrow\">Game lab</p>\n";
   Buffer.add_string buf html_body;
   Buffer.add_string buf "\n</article>\n";
   if fm.game then begin

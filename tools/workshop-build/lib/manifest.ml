@@ -2,6 +2,7 @@ type entry = {
   order : int;
   part : int option;
   lab : bool;
+  game : bool;
   title : string;
   slug : string;
 }
@@ -44,7 +45,15 @@ let build ~content_dir ~current_slug =
              if Sys.is_directory path then None
              else
                let fm = read_frontmatter path in
-               Some { order; part = fm.part; lab = fm.lab; title = fm.title; slug })
+               Some
+                 {
+                   order;
+                   part = fm.part;
+                   lab = fm.lab;
+                   game = fm.game;
+                   title = fm.title;
+                   slug;
+                 })
     |> List.sort (fun a b -> compare a.order b.order)
   in
   let rec validate_groups seen_lab = function

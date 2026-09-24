@@ -1,0 +1,61 @@
+---
+title: "Stretch 3"
+---
+
+# Stretch 3: `List.mem`
+
+For `next_cell_state_general`.
+
+## Checking membership in a list
+
+`List.mem : 'a -> 'a list -> bool` answers one question directly: is
+this value in that list?
+
+```ocaml
+let () =
+  assert (List.mem 3 [1; 2; 3; 4]);
+  assert (not (List.mem 9 [1; 2; 3; 4]))
+```
+
+`List.mem x xs` is `true` exactly when `x` appears somewhere in
+`xs`, checked with structural equality, the same `=` a literal
+pattern uses. It works on any element type the list holds: ints,
+strings, tuples, as long as the elements can be compared with `=`.
+
+## An alternative to a chain of literal patterns
+
+The [Problem 3 cheat sheet](problem-3.html) covered matching against
+one of several literals with an or-pattern, like `(2 | 3)`. That
+works well when the set of literals is fixed in the source code.
+When the set of values to check against is itself data, a list
+computed or passed in, `List.mem` is the better tool.
+
+```ocaml
+let is_valid_size sizes size =
+  List.mem size sizes
+
+let _ = is_valid_size [6; 8; 10; 12] 8   (* = true *)
+let _ = is_valid_size [6; 8; 10; 12] 7   (* = false *)
+```
+
+There's no `match` here at all. `sizes` is an ordinary list value,
+possibly built at runtime, and `List.mem` searches it directly. A
+`match` can only test against patterns written literally in the
+source. It has no way to test against whatever happens to be in a
+list right now.
+
+## It's not magic
+
+`List.mem` is itself an ordinary recursive function over a list,
+nothing the standard library does that you couldn't write yourself.
+
+```ocaml
+let rec contains x = function
+  | []     -> false
+  | h :: t -> h = x || contains x t
+```
+
+`||` short-circuits, so the search stops as soon as a match is
+found. `List.mem` is exactly this, under the name the standard
+library gives it. Reach for it instead of writing your own version
+of `contains` every time you need one.

@@ -30,9 +30,29 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONTENT = os.path.join(REPO, "content")
+CHEATSHEETS = os.path.join(REPO, "cheatsheets")
 
 # Pages emitted by tools/build-site.sh rather than from lectures/.
 BUILT_PAGES = {"index.html"}
+
+
+def cheatsheet_pages() -> set:
+    """Relative paths (e.g. "cheatsheets/tic-tac-toe/problem-1.html") of
+    every page tools/gen-cheatsheets.py renders from cheatsheets/**/*.mdx.
+    Unlike content/*.md, cheat sheets are nested per lab and reuse the
+    same filenames across labs (every lab has a problem-1.mdx), so
+    links into this tree are checked by full relative path rather than
+    basename -- see the dedicated branch in main() below."""
+    if not os.path.isdir(CHEATSHEETS):
+        return set()
+    out = set()
+    for root, _dirs, files in os.walk(CHEATSHEETS):
+        for name in files:
+            if not name.endswith(".mdx"):
+                continue
+            rel = os.path.relpath(os.path.join(root, name), REPO)
+            out.add(rel[: -len(".mdx")] + ".html")
+    return out
 
 
 def slugify(s: str) -> str:
@@ -145,6 +165,7 @@ def main():
     )
     ids_by_page = {f: heading_ids(os.path.join(CONTENT, f)) for f in md_files}
     pages = {f[:-3] + ".html" for f in md_files}
+    cheatsheets = cheatsheet_pages()
 
     failures = []
     for f in md_files:
@@ -158,6 +179,15 @@ def main():
             if target is None:  # same-page anchor
                 if anchor not in ids_by_page[f]:
                     failures.append(f"{where}: dead same-page anchor #{anchor}")
+                continue
+            # cheatsheets/** is a separate build (tools/gen-cheatsheets.py)
+            # whose pages are nested per lab and reuse filenames across
+            # labs (every lab has a problem-1.html), so these are checked
+            # by full relative path rather than basename, unlike every
+            # other link target here.
+            if target.startswith("cheatsheets/"):
+                if target not in cheatsheets:
+                    failures.append(f"{where}: link to unknown page {target}")
                 continue
             base = os.path.basename(target)
             if base in BUILT_PAGES:

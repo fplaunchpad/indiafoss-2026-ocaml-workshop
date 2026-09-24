@@ -1,0 +1,51 @@
+---
+title: "Problem 3"
+---
+
+# Problem 3: `Array.for_all`
+
+For `is_win`.
+
+## Checking a condition against every element
+
+`Array.for_all p a` returns `true` exactly when `p` returns `true` for
+every element of `a`. An empty array vacuously satisfies any `p`.
+
+```ocaml
+let all_even = Array.for_all (fun n -> n mod 2 = 0)
+let _ = all_even [| 2; 4; 6 |]   (* = true *)
+let _ = all_even [| 2; 3; 6 |]   (* = false *)
+```
+
+This reads almost like English: "for all elements, `p` holds." A
+scored guess wins exactly when every one of its five entries is
+`Correct` -- there's no need to count anything or write a recursive
+helper, `Array.for_all` already *is* that check.
+
+## The list equivalent
+
+The same idea exists for lists as `List.for_all`, with the identical
+signature shape (`('a -> bool) -> 'a list -> bool` instead of
+`('a -> bool) -> 'a array -> bool`). Reach for whichever matches the
+data structure you already have.
+
+```ocaml
+let _ = List.for_all (fun n -> n > 0) [1; 2; 3]   (* = true *)
+```
+
+## It's not magic
+
+Like `List.mem`, `Array.for_all` is just an ordinary loop under a
+name:
+
+```ocaml
+let for_all_manual p a =
+  let ok = ref true in
+  Array.iter (fun x -> if not (p x) then ok := false) a;
+  !ok
+```
+
+Once one condition fails, `ok` never becomes `true` again. Reaching
+for `Array.for_all` instead of writing this out every time is the
+whole point of a standard library: the loop shape is common enough
+that it has its own name.

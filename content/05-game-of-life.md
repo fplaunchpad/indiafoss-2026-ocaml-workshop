@@ -7,31 +7,35 @@ game: true
 lab: true
 ---
 
-# Practice: Conway's Game of Life <span class="small">(list version)</span>
+# Practice: Conway's Game of Life
 
-Contributed by [Smayan Agarwal](https://github.com/SmayanAgarwal) in [PR \#3](https://github.com/fplaunchpad/indiafoss-2026-ocaml-workshop/pull/3).
+In this lab you will implement the logic for Conway's **Game of Life**: a grid of cells, each alive or dead, where every cell updates at once under two rules. A live cell survives with 2 or 3 live neighbors; any other count kills it. A dead cell with exactly 3 live neighbors comes alive. Conway invented these two rules in 1970, and they're enough to produce complex shapes like gliders that crawl steadily across the board without ever stopping.
 
-**45-minute lab:** complete Problems 1–3. The remaining problems are optional stretches. Your answers are saved locally in this browser as you type. If you get stuck, use **Check**, inspect the tests, or open the reference solution.
+Most of this lab assumes that you did the Tic-Tac-Toe lab first. In its form, this lab is very similar. However, no worries if you haven't done that lab yet: the code is provided for you, and you can still complete this lab without it.
 
-Need a refresher? Review [pattern matching](02-data-types.html#pattern-matching) and [matching lists](02-data-types.html#matching-lists).
+On the right is a game panel (hidden for now) that will render the board and let you run the simulation. You will implement the logic for counting live cells, counting a cell's live neighbors, and deciding whether each cell lives or dies from one generation to the next. All of the piping for the game is already in place so you will only be implementing the logic.
 
-Conway's **Game of Life** is a grid of cells, each alive or dead, and every cell updates at once under two rules. A live cell survives with 2 or 3 live neighbors; any other count kills it. A dead cell with exactly 3 live neighbors comes alive. Conway invented these two rules in 1970, and they're enough to produce complex shapes like gliders that crawl steadily across the board without ever stopping.
+Three small functions build the core simulation: `population` counts live cells, and `count_live_neighbors` and `next_cell_state` together decide who lives and who dies each generation. Three stretch functions build on top of that: `random_grid` seeds a random board, and `parse_rule` with `next_cell_state_general` let you play variants of Life with different birth/survival rules.
 
 Below you can read some of the important functions and definitions that you will have to use as you code up the solutions to the given functions.
 
 ```ocaml
 
-        let rows = 24 (* number of rows on the board *)
-        let cols = 24 (* number of columns on the board *)
+        let rows = 24 
+        (* number of rows on the board *)
+        let cols = 24 
+        (* number of columns on the board *)
 
-        type grid = bool list list (* alive/dead for every cell, one list of rows, each row a list of cells *)
+        type grid = bool list list 
+        (* alive/dead for every cell, one list of rows, each row a list of cells *)
 
-        let make_grid () = List.init rows (fun _ -> List.init cols (fun _ -> false)) (* a fresh, all-dead board *)
+        let make_grid () = List.init rows (fun _ -> List.init cols (fun _ -> false)) 
+        (* a fresh, all-dead board *)
 
         (* reads the cell at (r, c). Lists have no `.(r).(c)` syntax, so every read in this exercise goes through this instead. *)
         let get g r c = List.nth (List.nth g r) c
 
-        (* returns a NEW board with (r, c) set to v, everything else unchanged. replace_nth is a local helper: it returns a NEW list with the element at index i replaced by v, everything else unchanged, walking the list one cell at a time (at index 0, swap in v and keep the rest as-is; otherwise keep this element and recurse on the tail with one fewer step to go). set calls it twice: once to replace the one cell within its row, then again to replace that whole (now-updated) row within the board. *)
+        (* returns a NEW board with (r, c) set to v, everything else unchanged. *)
         let set g r c v =
         let rec replace_nth i v lst =
         match lst with
@@ -40,7 +44,7 @@ Below you can read some of the important functions and definitions that you will
         in
         replace_nth r (replace_nth c v (List.nth g r)) g
 
-        (* keeps a coordinate on the board by wrapping it around the edge *)
+        (* wraps a coordinate onto the board, so that the top edge wraps to the bottom and the left edge wraps to the right. *)
         let wrap n limit = if n < 0 then n + limit else if n >= limit then n - limit else n
 
           (* the eight (row, column) offsets around a cell *)
@@ -48,6 +52,10 @@ Below you can read some of the important functions and definitions that you will
           [ (-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1) ]
 
 ```
+
+The last two definitions are interesting. In Conway's Game of Life, the board is a torus: the top edge wraps to the bottom, and the left edge wraps to the right. The `wrap` function keeps a coordinate on the board by wrapping it around the edge. The `neighbor_offsets` list contains the eight `(row, column)` offsets around a cell, which you will use to count its live neighbors.
+
+At some point, you might be wondering, does OCaml not have a built-in 2D array type? It does, but the game panel is written to use lists instead. For pedagogical purposes we just prefer to use lists because they are more ideologically aligned with some core tenets of functional programming (namely [immutability](https://fplaunchpad.github.io/ocaml_nptel/M01-L02-why-fp.html#immutability-in-practice)).
 
 Open the provided game code below and press **Run** to render the board. You need not read every function, though it is a useful example of idiomatic OCaml. The board starts with minimal functionality and gets built up as you finish the problems.
 
@@ -343,15 +351,30 @@ Open the provided game code below and press **Run** to render the board. You nee
 
 ### Problem 1: `population`
 
+Before anything else can happen, the board needs to know how many cells are alive right now. The number thus calculated will be displayed in the population counter on the game panel.
+
 :::quiz code id=life-q1
 `population : grid -> int` returns how many cells on the whole board are alive
-right now. The argument `g` is the complete grid; iterate over every row and
-every cell and return the count.
+right now. The argument `grid` is the complete grid: a list of rows, each row
+a list of cells. A recursive helper that pattern-matches on one row counts
+that row; a second recursive helper combines the row counts across the whole
+grid.
+
+Hint: You are required to recurse on two levels: first over each row and then over each column. This being 
+the first problem, we have provided helpful stubs. 
 
 ```ocaml
-let population g =
+let population grid =
+          let rec count_row row =
           failwith "not implemented"
+          in
+          let rec count_grid grid =
+          ignore count_row;
+          failwith "not implemented"
+          in
+          count_grid grid
 
+          (* This is piping for the game board. To be ignored. *)
           let () = population_ref := population
 ```
 
@@ -366,31 +389,47 @@ let check b m = if not b then failwith m
           print_endline "all tests passed"
 ```
 
+[Cheat sheet: Problem 1](cheatsheets/game-of-life/problem-1.html)
+
 :::
+The `let () = population_ref := population` line is plumbing that registers your function with the game panel. Problem 1 and the three stretch problems each end with a line like this; Problems 2 and 3 don't need one, since `next_generation` calls them directly. Ignore the line wherever you see it.
+
 :::solution
 Reference solution:
 
 ```ocaml
-let population g =
-          let count_row row =
-          List.fold_left (fun total alive -> if alive then total + 1 else total) 0 row
+let population grid =
+          let rec count_row row =
+          match row with
+          | [] -> 0
+          | true :: rest -> 1 + count_row rest
+          | false :: rest -> count_row rest
           in
-          List.fold_left (fun total row -> total + count_row row) 0 g
+          let rec count_grid grid =
+          match grid with
+          | [] -> 0
+          | row :: rest -> count_row row + count_grid rest
+          in
+          count_grid grid
 ```
 
-This uses two `List.fold_left` calls. One counts the live cells in a single row. The other adds up those row counts across the whole grid.
+`count_row` recurses down one row, adding 1 for every `true` cell it passes and skipping every `false` one. `count_grid` does the same thing one level up: it recurses down the list of rows, adding each row's count to the running total. Two small recursions instead of one big one.
 
 :::
 ### Problem 2: `count_live_neighbors`
 
+The next step is counting live cells *around* one particular cell. This is important for deciding which cells lives and dies in each generation.
+
 :::quiz code id=life-q2
 `count_live_neighbors : grid -> int -> int -> int` returns the number of live
-neighbors around one cell. Its arguments are the grid `g`, row `r`, and column
+neighbors around one cell. Its arguments are the `grid`, row `r`, and column
 `c`, in that order. Use `wrap` so a cell right on the edge of the board still
 sees all eight neighbors.
 
+Hint: `neighbor_offsets` gives you the eight `(dr, dc)` offsets to check. A recursive helper that walks that list, testing one offset at a time with `get` and `wrap`, works well.
+
 ```ocaml
-let count_live_neighbors g r c =
+let count_live_neighbors grid r c =
           failwith "not implemented"
 ```
 
@@ -411,25 +450,30 @@ let check b m = if not b then failwith m
           print_endline "all tests passed"
 ```
 
+[Cheat sheet: Problem 2](cheatsheets/game-of-life/problem-2.html)
+
 :::
 :::solution
 Reference solution:
 
 ```ocaml
-let count_live_neighbors g r c =
-          let neighbor_is_alive (dr, dc) =
-          get g (wrap (r + dr) rows) (wrap (c + dc) cols)
+let count_live_neighbors grid r c =
+          let rec count_offsets offsets current_count =
+          match offsets with
+          | [] -> current_count
+          | (dr, dc) :: rest ->
+          let live = if get grid (wrap (r + dr) rows) (wrap (c + dc) cols) then 1 else 0 in
+          count_offsets rest (current_count + live)
           in
-          let alive_neighbors =
-          List.filter (fun offset -> neighbor_is_alive offset) neighbor_offsets
-          in
-          List.length alive_neighbors
+          count_offsets neighbor_offsets 0
 ```
 
-`neighbor_is_alive` tests one offset against the board. `List.filter` keeps the offsets that pass that test, and `List.length` counts how many are left.
+`count_offsets` recurses down `neighbor_offsets` one `(dr, dc)` pair at a time, threading the running total through as `current_count` instead of combining it on the way back up. Each offset is wrapped onto the board with `wrap` and checked with `get`; a live neighbor adds 1, a dead one adds 0. 
 
 :::
 ### Problem 3: `next_cell_state`
+
+With `count_live_neighbors` in hand, the last piece is turning that neighbor count into a decision: does this one cell live or die in the next generation?
 
 :::quiz code id=life-q3
 `next_cell_state : bool -> int -> bool` decides whether one cell is alive in
@@ -438,6 +482,8 @@ number of live neighbors; the returned boolean is its next state.
 
 - a live cell with 2 or 3 live neighbors survives; anything else dies
 - a dead cell with exactly 3 live neighbors is born
+
+Hint: this is a direct transcription of the two rules above into a `match` on the pair `(alive, live_neighbors)`.
 
 ```ocaml
 let next_cell_state alive live_neighbors =
@@ -455,6 +501,8 @@ let check b m = if not b then failwith m
           check (next_cell_state false 2 = false) "a dead cell with 2 neighbors stays dead";
           print_endline "all tests passed"
 ```
+
+[Cheat sheet: Problem 3](cheatsheets/game-of-life/problem-3.html)
 
 :::
 :::solution
@@ -492,7 +540,7 @@ The function above creates the new board. The provided plumbing below connects i
 :::provided
 ```ocaml
 
-          (* Composes with count_live_neighbors (Problem 2, above) the same way next_generation composes with next_cell_state -- used only once a rule preset button is pressed (see the setup cell's custom_rule_ref), which needs the general STUDENT rule function from further down the page instead of the hardcoded next_cell_state this cell already has. *)
+          (* Like next_generation, but calls next_cell_state_general_ref, for custom rule presets. *)
           let next_generation_general (birth, survive) g =
           List.init rows (fun r ->
           List.init cols (fun c ->
@@ -531,6 +579,8 @@ The function above creates the new board. The provided plumbing below connects i
 ```
 
 :::
+
+After you have run the above cell, you will be able to click the **Step** button on the board to advance one generation at a time. You can also click **Start** to run the simulation continuously, and **Stop** to pause it. The **Clear** button resets the board to all dead cells.
 ### Provided: try some classics
 
 Before the stretch problems, try the four pattern buttons on the board. **Glider** is the simplest thing that moves: five cells that walk diagonally forever, reproducing their shape every four generations. **Pulsar** stays put, expanding and contracting on a three-generation cycle. **Spaceship** travels in a straight line, while **Pentadecathlon** stays put on a longer 15-generation cycle.
@@ -540,11 +590,12 @@ Before the stretch problems, try the four pattern buttons on the board. **Glider
 :::quiz code id=life-q4
 A board where each cell is alive with roughly probability `p`, somewhere from 0.0 to 1.0.
 
+Hint: `Random.float 1.0 < p` flips a coin with probability `p`.
+
 ```ocaml
 let random_grid p =
           failwith "not implemented"
 
-          (* PROVIDED -- registers your function with the board (see the setup cell's random_grid_ref) so Random and the r/R key pick it up on the very next press. *)
           let () = random_grid_ref := random_grid
 ```
 
@@ -559,16 +610,28 @@ let check b m = if not b then failwith m
           print_endline "all tests passed"
 ```
 
+[Cheat sheet: Stretch 1](cheatsheets/game-of-life/stretch-1.html)
+
 :::
 :::solution
 Reference solution:
 
 ```ocaml
 let random_grid p =
-          List.init rows (fun _ -> List.init cols (fun _ -> Random.float 1.0 < p))
+          let rec random_row row =
+          match row with
+          | [] -> []
+          | _ :: rest -> (Random.float 1.0 < p) :: random_row rest
+          in
+          let rec random_of grid =
+          match grid with
+          | [] -> []
+          | row :: rest -> random_row row :: random_of rest
+          in
+          random_of (make_grid ())
 ```
 
-Unlike the array version of this exercise, there is no in-place fill here. A list has no cell to mutate, so the only way to build one is to give `List.init` a function that produces each cell afresh. The outer `List.init` builds the rows, the inner one fills each row, and `Random.float 1.0 < p` is the coin flip: a number is picked uniformly between 0.0 and 1.0, and it lands below `p` with probability exactly `p`.
+A list has no cell to mutate, so there's no board to fill in place — but there's already a board of the right shape sitting around: `make_grid ()`, the same all-dead grid the session starts from. `random_row` and `random_of` recurse over *that*, the same two-level walk `population`'s `count_row`/`count_grid` use, except each old cell is thrown away (`_`, `row`) and replaced with a freshly-flipped coin — `Random.float 1.0 < p`, a number picked uniformly between 0.0 and 1.0 that lands below `p` with probability exactly `p`.
 
 :::
 ### Stretch: `parse_rule`
@@ -576,11 +639,12 @@ Unlike the array version of this exercise, there is no in-place fill here. A lis
 :::quiz code id=life-q5
 Conway's rules ("a live cell survives on 2 or 3 neighbors, a dead cell is born on exactly 3") are one example of a whole family of similar automata. Two numbers describe any of them: a **Birth** number, whose digits are the neighbor counts that bring a dead cell to life, and a **Survive** number, whose digits are the neighbor counts a live cell survives on. Conway is birth `3`, survive `23`: born on exactly 3 neighbors and surviving on 2 or 3. Change birth to `36` and you get "HighLife", a different automaton on the same grid that is famous for containing a small pattern that *replicates itself*. Standard Life has no known example of such a pattern. `parse_rule` turns those two numbers into the lists that `next_cell_state_general` will use, one `int` per digit: `parse_rule 3 23` becomes `([3], [2; 3])`.
 
+Hint: This is not too difficult. You should try it if you have the time. HighLife and Maze are quite trippy and worth having a look at. 
+
 ```ocaml
 let parse_rule birth survive =
           failwith "not implemented"
 
-          (* PROVIDED -- registers your function with the board (see the setup cell's parse_rule_ref); the rule preset buttons and the Birth/Survive text boxes beside the board call through this the moment you press or edit one, no re-run needed. *)
           let () = parse_rule_ref := parse_rule
 ```
 
@@ -592,6 +656,8 @@ let check b m = if not b then failwith m
           check (parse_rule 2 0 = ([2], [])) "parse_rule 2 0 = ([2], []) (Seeds has no survival rule)";
           print_endline "all tests passed"
 ```
+
+[Cheat sheet: Stretch 2](cheatsheets/game-of-life/stretch-2.html)
 
 :::
 :::solution
@@ -615,7 +681,9 @@ let parse_rule birth survive =
 ### Stretch: `next_cell_state_general`
 
 :::quiz code id=life-q6
-This is the general version of Problem 3's `next_cell_state`. Instead of baking the rule numbers 2, 3 and 3 directly into the code, take the `(birth, survive)` lists produced by `parse_rule` and look up the neighbor count in the applicable list: `survive` if the cell is alive now, or `birth` if it is dead. You may use `List.mem`, which answers "is this number in that list?" directly, so no match is required.
+This is the general version of Problem 3's `next_cell_state`. Instead of baking the rule numbers 2, 3 and 3 directly into the code, take the `(birth, survive)` lists produced by `parse_rule` and look up the neighbor count in the applicable list: `survive` if the cell is alive now, or `birth` if it is dead.
+
+Hint: `List.mem` answers "is this number in that list?" directly, so no match is required.
 
 ```ocaml
 let next_cell_state_general (birth, survive) alive live_neighbors =
@@ -643,6 +711,8 @@ let check b m = if not b then failwith m
           check (next_cell_state_general conway false 6 = false) "standard Life: a dead cell with 6 neighbors stays dead";
           print_endline "all tests passed"
 ```
+
+[Cheat sheet: Stretch 3](cheatsheets/game-of-life/stretch-3.html)
 
 :::
 :::solution

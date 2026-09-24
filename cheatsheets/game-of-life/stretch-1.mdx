@@ -1,0 +1,35 @@
+---
+title: "Stretch 1"
+---
+
+# Stretch 1: Replacing values as you recurse
+
+For `random_grid`.
+
+## The same two-level walk, a different job at each stop
+
+Problem 1's cheat sheet walks a list of lists with two recursive helpers, one per level of nesting, each matching `[]` and `h :: t`. This problem reuses that shape. What changes is the job each helper does at a cell. A counting helper looks at the old value and decides whether to add 1. Here the old value gets thrown away. Something new takes its place.
+
+```ocaml
+let rec redact_line line =
+  match line with
+  | [] -> []
+  | _ :: rest -> mask_word () :: redact_line rest
+```
+
+`_` discards whatever was in that position. `mask_word ()` produces a fresh value with no relation to it, and that fresh value gets consed onto the rest of the recursion. The old list still does one job: its length tells the recursion when to stop.
+
+## One level up
+
+```ocaml
+let rec redact_document doc =
+  match doc with
+  | [] -> []
+  | line :: rest -> redact_line line :: redact_document rest
+```
+
+`redact_document` never looks inside `line`. It hands the whole line to `redact_line` and conses whatever comes back.
+
+## Where the list to recurse over comes from
+
+Nothing needs building from scratch here. A blank version of the thing you want already exists somewhere, an empty grid, ready to walk. Recurse over it, replace each cell, and the shape comes along for free. Counting rows and columns by hand would just rebuild something the blank version already had.

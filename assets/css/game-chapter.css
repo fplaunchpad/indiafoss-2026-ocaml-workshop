@@ -43,6 +43,37 @@ body.game-chapter.mode-chapter:not(.sidebar-hidden) .game-chapter-layout .chapte
   margin: 0;
 }
 
+/* A grid item establishes its own formatting context, so unlike a plain
+   chapter page -- where .chapter's 2rem margin-top and the opening h1's
+   2.2rem margin-top collapse into a single 2.2rem band -- the article here
+   cannot collapse its first child's top margin out through its own edge.
+   The two stack instead: 2rem of layout margin plus 2.2rem of trapped
+   heading margin, which left ~36px of extra blank column beside the
+   board panel before the title started. The layout's own margin-top
+   already spaces the content below the header bar, so drop the trapped
+   margin from whatever content opens the article. */
+.game-chapter-layout .chapter > x-ocaml[data-boot-sentinel] + * {
+  margin-top: 0;
+}
+
+/* Section label above the lab's own title, matching the landing page's
+   .eyebrow treatment and its "Game lab" heading. Needs two classes to
+   outrank chapter.css's [.chapter p] margin. */
+.game-chapter-layout .game-lab-eyebrow {
+  margin: 0 0 .15rem;
+  color: var(--muted);
+  font: 600 .8rem/1.4 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* The eyebrow is part of the title block, so the title below it needs a
+   hairline of separation rather than chapter.css's full 2.2rem section
+   break. */
+.game-chapter-layout .game-lab-eyebrow + h1 {
+  margin-top: .2rem;
+}
+
 .game-board {
   position: sticky;
   top: calc(var(--page-header-height, 3.6rem) + 1rem);

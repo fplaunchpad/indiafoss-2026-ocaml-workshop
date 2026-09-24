@@ -1,0 +1,46 @@
+---
+title: "Problem 1"
+---
+
+# Problem 1: Arrays and `Random`
+
+For `random_target`.
+
+## Arrays vs. lists
+
+An array is a fixed-size, indexable block of values, written with
+`[| ... |]`. Unlike a list, reading element `i` is instant no matter
+how big the array is -- there's no walking down a chain of cells to
+get there.
+
+```ocaml
+let a = [| "red"; "green"; "blue" |]
+let _ = a.(0)   (* = "red" *)
+let _ = Array.length a   (* = 3 *)
+```
+
+`word_list` is an array (not a list) for exactly this reason: picking
+a random word means picking a random index, and that only stays fast
+if indexing is instant.
+
+## `Random.int`
+
+`Random.int n` returns a random integer, uniformly distributed, from
+`0` up to but not including `n`.
+
+```ocaml
+let () =
+  let n = Random.int 6 in
+  assert (n >= 0 && n < 6)
+```
+
+Combine the two: a random index into an array of length `n` is
+`Random.int n`, and `a.(Random.int n)` is a random element of `a`.
+
+## Why not `List.nth`?
+
+`List.nth l i` has to walk `i` cells into the list before it reaches
+the answer -- reading the last element of a 4,615-word list means
+walking through all 4,614 before it. `Array.get`/`a.(i)` computes the
+address of element `i` directly, so it costs the same whether `i` is
+`0` or `4,614`.

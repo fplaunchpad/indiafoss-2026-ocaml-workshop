@@ -1,0 +1,73 @@
+---
+title: "Problem 1"
+---
+
+# Problem 1: Recursion over nested lists
+
+For `population`.
+
+## Recursion over one list
+
+A list is built from two constructors: `[]` for empty, `h :: t` for
+a head `h` and tail `t`. A function that walks a list almost always
+has one `match` clause per constructor, doing some work with `h` and
+recursing on `t`.
+
+```ocaml
+let rec length l =
+  match l with
+  | []     -> 0             (* base case *)
+  | _ :: t -> 1 + length t  (* recursive case *)
+
+let _ = length [10; 20; 30]  (* = 3 *)
+```
+
+`length` does its real work after the recursive call returns.
+`1 + length t` still has an addition left to do once `length t`
+comes back. A function like this one doesn't need to be
+tail-recursive to work correctly, only to avoid a stack overflow on
+very large inputs.
+
+## One level of nesting, one more helper
+
+A list of lists, a document as a list of sentences where each
+sentence is a list of words, has two levels of structure. Walking
+all of it means recursing at both levels: one helper that handles a
+single inner list, and a second helper, built the same way, that
+handles the list of those lists and combines each one's own result
+with the running total.
+
+```ocaml
+let rec count_words sentence =
+  match sentence with
+  | []      -> 0
+  | _ :: ws -> 1 + count_words ws
+
+let rec count_document paragraph =
+  match paragraph with
+  | []             -> 0
+  | sentence :: ps -> count_words sentence + count_document ps
+
+let _ = count_document [["a"; "cat"]; ["sat"]]  (* = 3 *)
+```
+
+`count_words` is `length` under a different name. It recurses down
+one sentence, adding 1 per word. `count_document` follows the same
+shape one level up. It recurses down the list of sentences, and for
+each one adds that sentence's own word count, found by calling
+`count_words` on it, to the running total from the rest of the
+document. Neither helper is tail-recursive. Both do their addition
+on the way back up the call stack, after their recursive call
+returns. That's the right shape here: two separate additions to
+perform, one per level of nesting, not one running total threaded
+all the way through.
+
+## Why two helpers?
+
+`count_words` and `count_document` take different kinds of argument,
+one sentence versus a list of sentences, and recurse over different
+lists, so they can't be the same function. `count_document`'s job at
+each step stays simple: find the count for one sentence by calling
+`count_words`, and add it to the count for the rest. One recursive
+helper per level of nesting, each calling into the level below it,
+is the standard shape for a function over a nested list.
