@@ -32,15 +32,13 @@ Let's begin with a tour through the basics of the OCaml programming language.
 
 :::slide
 
-## Why OCaml
-
 - A functional language in the same family as Haskell and Standard ML.
 - Functional-first but multi-paradigm (imperative and object-oriented).
-- Statically typed with Hindley-Milner type inference.
 - Compiles to native code (x86, ARM, RISC-V), JavaScript and WASM.
 - Industrial-strength: Used at Jane Street, Meta, Microsoft,
   Ahrefs, Citrix, Tezos, Bloomberg, Docker.
-- OCaml has also been in space! 🚀
+- OCaml has also been in
+  [space](https://parsimoni.co/blog/2026-04-07-predicting-satellite-collisions-in-ocaml.html)! 🚀
 
 :::
 
