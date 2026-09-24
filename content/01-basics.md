@@ -152,6 +152,9 @@ let pi = 3.1415
 let radius = 6.0
 let area = failwith "not implemented"
 ```
+```mdx-error
+Exception: Failure "not implemented".
+```
 
 ```ocaml skip
 let check b m = if not b then failwith m
