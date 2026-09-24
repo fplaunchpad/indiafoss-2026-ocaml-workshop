@@ -76,6 +76,53 @@ let y = M.x
 Note that the `.` operator works for types as well as values: the
 `y` variable defined above has type `M.t`.
 
+### A real world module
+
+ Modules group several related types together with
+the functions that operate on them. Consider a small `Point` module:
+
+:::slide
+
+## Example
+
+```ocaml
+module Point = struct
+  type x = int
+  type y = int
+  type t = { x : x; y : y }
+
+  let origin = { x = 0; y = 0 }
+
+  let make x y = { x; y }
+
+  let add p1 p2 = { x = p1.x + p2.x; y = p1.y + p2.y }
+end
+```
+
+- A module can define more than one type: here `x` and `y` name the
+  two coordinates, and `t` is the point built from them.
+- `Point.origin`, `Point.make`, and `Point.add` are all reached the
+  same way, with `.`.
+
+:::
+
+```ocaml
+let p = Point.add Point.origin (Point.make 3 4)
+```
+
+`p` is `{ x = 3; y = 4 }`. Everything about points lives under one
+name, `Point`, instead of floating around as loose top-level
+definitions that could clash with, say, some other part of the
+program's own `origin` or `add`.
+
+`x` and `y` are *aliases* for `int`, not new, distinct types: nothing
+stops you from writing `p1.x + p2.y`, mismatched coordinate or not.
+Naming them separately is about making signatures self-documenting as
+`make : x -> y -> t` reads better than `make : int -> int -> t`.
+Later in this lesson we will see how a
+signature can make a type genuinely opaque, so that mixing things up
+really does become a compile error.
+
 ### Files as structures
 
 In OCaml every source file defines a structure. For example, a
@@ -95,6 +142,48 @@ library is defined in a file called
   first letter capitalised.
 - `List.map` is just the `map` defined in the standard library's
   `list.ml`.
+
+:::
+
+:::slide
+
+:::quiz code id=modules-temperature
+Define a module `Temperature` containing a function
+`celsius_to_fahrenheit : float -> float` that converts a Celsius
+temperature to Fahrenheit (`f = c * 9.0 / 5.0 + 32.0`).
+
+```ocaml
+module Temperature = struct
+  let celsius_to_fahrenheit c = failwith "not implemented"
+end
+```
+
+```ocaml skip
+let check b m = if not b then failwith m
+let () =
+  check (Float.abs (Temperature.celsius_to_fahrenheit 0.0 -. 32.0) < 0.01) "0C is 32F";
+  check (Float.abs (Temperature.celsius_to_fahrenheit 100.0 -. 212.0) < 0.01) "100C is 212F";
+  check (Float.abs (Temperature.celsius_to_fahrenheit (-40.0) -. (-40.0)) < 0.01) "-40C is -40F";
+  print_endline "all tests passed"
+```
+:::
+
+:::
+
+:::slide
+
+:::solution
+
+Nothing about modules changes how you write the function body — the
+`module ... = struct ... end` wrapper is just packaging.
+
+```ocaml
+module Temperature = struct
+  let celsius_to_fahrenheit c = c *. 9.0 /. 5.0 +. 32.0
+end
+```
+
+:::
 
 :::
 
@@ -157,6 +246,12 @@ end
 
 :::
 
+Naming a module type like `INT_SET` lets more than one module promise
+to satisfy it. Any structure ascribed as `INT_SET` must supply exactly
+these three names — no more, no fewer — which is what makes the next
+step possible: swapping one `IntSet` implementation for another
+without touching anything that only knows about `INT_SET`.
+
 :::slide
 
 ## Signature ascription
@@ -167,9 +262,7 @@ module IntSet : INT_SET = struct
 
   let empty = []
 
-  let mem i s =
-    let is_i j = (i = j) in
-      List.exists is_i s
+  let mem i s = List.mem i s
 
   let add i s =
     if mem i s then s
@@ -182,6 +275,14 @@ end
 - Another implementation can promise the same `INT_SET` interface.
 
 :::
+
+The colon in `module IntSet : INT_SET = struct ... end` is a
+*signature ascription*: it restricts what the outside world sees of
+`IntSet` to exactly the `INT_SET` signature, even though the
+`struct ... end` on the right defines more (the concrete
+`type t = int list`). Read it the way you'd read a value's type
+annotation, `let x : int = 5`, just one level up — for a module
+instead of a value.
 
 :::slide
 
@@ -241,6 +342,7 @@ type cannot depend on the fact we have implemented it using lists.
 ```ocaml skip
 let r = 4 :: s
 ```
+
 ```mdx-error
 Line 1, characters 13-14:
 Error: This expression has type IntSet.t
@@ -259,6 +361,7 @@ Error: This expression has type IntSet.t
 ```ocaml skip
 let r = 4 :: s
 ```
+
 ```mdx-error
 Line 1, characters 13-14:
 Error: This expression has type IntSet.t
@@ -277,24 +380,26 @@ what the error makes possible. In the live session:
 
 :::slide
 
-## Live demo: swap the implementation
+## Live demo: let's swap the implementation
 
-Keep `INT_SET` and the client unchanged. Replace only `IntSet`:
+The signature `INT_SET` remains in place, the **implementation**`IntSet` needs
+to be changed:
 
 ```ocaml skip
 module IntSet : INT_SET = struct
-  type t = Set of int list
+  type t = int list
 
-  let empty = Set []
+  let empty = []
 
-  let mem i (Set xs) = List.mem i xs
+  let mem i s = List.mem i s
 
-  let add i (Set xs as s) =
-    if List.mem i xs then s else Set (i :: xs)
+  let add i s =
+    if mem i s then s
+    else i :: s
 end
 ```
 
-Then rerun:
+Now rerunning:
 
 ```ocaml skip
 let s = IntSet.add 6 (IntSet.add 5 IntSet.empty)
@@ -309,6 +414,67 @@ the hidden list representation.
 Types with hidden definitions, like `t` above, are called
 abstract types. OCaml's support for abstraction is one of its most
 important and powerful features.
+
+:::slide
+
+:::quiz code id=modules-counted-set
+The `INT_SET` interface has no way to ask how many elements a set
+holds. Below is a `COUNTED_SET` signature that adds one, `size`, and
+an implementation with `empty`, `mem`, and `add` already filled in —
+complete `size` (the tests only ever call `IntSet2.empty`, `.add`,
+and `.size`, never anything about how `t` is represented).
+
+```ocaml
+module type COUNTED_SET = sig
+  type t
+  val empty : t
+  val mem : int -> t -> bool
+  val add : int -> t -> t
+  val size : t -> int
+end
+
+module IntSet2 : COUNTED_SET = struct
+  type t = int list
+
+  let empty = []
+
+  let mem i s = List.mem i s
+
+  let add i s =
+    if mem i s then s
+    else i :: s
+
+  let size s = failwith "not implemented"
+end
+```
+
+```ocaml skip
+let check b m = if not b then failwith m
+let () =
+  check (IntSet2.size IntSet2.empty = 0) "empty set has size 0";
+  let s = IntSet2.add 1 (IntSet2.add 2 (IntSet2.add 1 IntSet2.empty)) in
+  check (IntSet2.size s = 2) "adding a duplicate does not grow the set";
+  print_endline "all tests passed"
+```
+:::
+
+:::
+
+:::slide
+
+:::solution
+
+Inside the module, `t` is still just `int list`, so `size` can use
+the concrete representation directly — abstraction only stops
+*callers* from doing that, not the module itself.
+
+```ocaml
+let size s = List.length s
+```
+
+:::
+
+:::
 
 ### Signatures for files
 
