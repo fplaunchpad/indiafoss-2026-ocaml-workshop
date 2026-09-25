@@ -173,15 +173,14 @@ Hint: For this first problem, we have given you a stub for the helper function. 
 
 
 ```ocaml
-let no_empty_cells_left board =
-          let rec helper board =
-          failwith "not implemented"
+let rec no_empty_cells_left board =
+  match board with
+  | [] -> failwith "not implemented"
+  | Empty :: _ -> failwith "not implemented"
+  | _ :: _ -> failwith "not implemented"
 
-          in
-          helper board
-
-          (*  You may ignore the following line of code   *)
-          let () = no_empty_cells_left_ref := no_empty_cells_left
+  (*  You may ignore the following line of code  *)
+  let () = no_empty_cells_left_ref := no_empty_cells_left
 ```
 
 Once you run this (or any later problem's) code, you can see its effect on the game panel on the side.
@@ -207,16 +206,14 @@ The `let () = no_empty_cells_left_ref := no_empty_cells_left` line is plumbing t
 Reference solution:
 
 ```ocaml
-let no_empty_cells_left board =
-          let rec helper board =
+let rec no_empty_cells_left board =
           match board with
           |[] -> true
           | Empty :: _ -> false
-          | _ :: xs -> helper xs in
-          helper board
+          | _ :: xs -> no_empty_cells_left xs 
 ```
 
-`no_empty_cells_left` passes the board to the helper function, which recursively checks whether any of the cells are `Empty`. It returns `true` once it reaches the empty list `[]`, meaning no `Empty` cell was found along the way. Note that in order for `helper` to call itself, it must be declared `rec`.
+`no_empty_cells_left` recursively checks whether any of the cells are `Empty`. It returns `true` once it reaches the empty list `[]`, meaning no `Empty` cell was found along the way. Note that in order for the function to call itself, it must be declared `rec`.
 
 :::
 
